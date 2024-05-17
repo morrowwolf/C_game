@@ -1,0 +1,93 @@
+
+#include "../headers/windowCPUBuffer.h"
+
+DWORD WINAPI BufferHandler(LPVOID lpParam)
+{
+    BufferArgs *bufferArgs = (BufferArgs *)lpParam;
+    unsigned short id = bufferArgs->bufferId;
+
+    free(bufferArgs);
+
+    WaitForSingleObject(SCREEN->windowHandleInitializedEvent, INFINITE);
+
+    HDC screenDC = GetDC(SCREEN->windowHandle);
+
+    HDC bufferDC = CreateCompatibleDC(screenDC);
+    SCREEN->bufferMemDCs[id] = bufferDC;
+
+    HBITMAP bufferBitmap = CreateCompatibleBitmap(screenDC,
+                                                  DEFAULT_SCREEN_SIZE_X,
+                                                  DEFAULT_SCREEN_SIZE_Y);
+
+    HBITMAP oldBitmap = SelectObject(bufferDC, bufferBitmap);
+    // NOLINTNEXTLINE
+    HGDIOBJ original = SelectObject(bufferDC, GetStockObject(WHITE_PEN));
+
+    SetTextAlign(bufferDC, GetTextAlign(bufferDC) & (~TA_BASELINE | ~TA_CENTER));
+    SetTextColor(bufferDC, RGB(255, 255, 255));
+    SetBkMode(bufferDC, TRANSPARENT);
+    SetBkColor(bufferDC, RGB(0, 0, 0));
+
+    DeleteObject(oldBitmap);
+
+    ReleaseDC(SCREEN->windowHandle, screenDC);
+
+    while (TRUE)
+    {
+        WaitForSingleObject(SCREEN->bufferDrawingMutexes[id], INFINITE);
+
+        RECT rect = {0, 0, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y};
+
+        FillRect(bufferDC, &rect, GetStockObject(BLACK_BRUSH));
+
+        ListElmt *referenceElementEntities = GAMESTATE->entities.head;
+        while (referenceElementEntities != NULL)
+        {
+            Entity *referenceEntity = referenceElementEntities->data;
+
+            if (referenceEntity->alive != ENTITY_ALIVE)
+            {
+                referenceElementEntities = referenceElementEntities->next;
+                continue;
+            }
+
+            ListElmt *referenceElementOnDraw = referenceEntity->onDraw.head;
+            while (referenceElementOnDraw != NULL)
+            {
+                ((void (*)(Entity *, HDC *))referenceElementOnDraw->data)(referenceEntity, &bufferDC);
+                referenceElementOnDraw = referenceElementOnDraw->next;
+            }
+            referenceElementEntities = referenceElementEntities->next;
+        }
+
+        TCHAR buffer[16];
+
+#ifdef DEBUG
+        int i;
+        for (i = 48; i < 90; i++)
+        {
+            if (i > 57 && i < 65)
+            {
+                continue;
+            }
+            _stprintf(buffer, TEXT("%c"), i);
+            TextOut(bufferDC, i + (12 * (i - 48)), 0, buffer, _tcslen(buffer));
+            _stprintf(buffer, TEXT("%d"), GAMESTATE->keys[i]);
+            TextOut(bufferDC, i + (12 * (i - 48)), 20, buffer, _tcslen(buffer));
+        }
+
+#endif
+
+        _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
+        TextOut(bufferDC, DEFAULT_SCREEN_SIZE_X / 2, 10, buffer, _tcslen(buffer));
+
+        ReleaseMutex(SCREEN->bufferDrawingMutexes[id]);
+
+        WaitForSingleObject(SCREEN->bufferRedrawSemaphores[id], INFINITE);
+        ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[id], 1, NULL);
+    }
+
+    SelectObject(bufferDC, original);
+    DeleteDC(bufferDC);
+    exit(0);
+}
