@@ -6,7 +6,7 @@
 
 #define _USE_MATH_DEFINES 1
 
-#define DEBUG 1
+// #define DEBUG 1
 
 #include <Windows.h>
 #include <math.h>
