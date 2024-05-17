@@ -15,7 +15,7 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
     TCHAR szAppName[] = TEXT("C Game");
     WNDCLASS wndclass;
 
-    wndclass.style = 0;
+    wndclass.style = CS_OWNDC;
     wndclass.lpfnWndProc = WndProc;
     wndclass.cbClsExtra = 0;
     wndclass.cbWndExtra = 0;
