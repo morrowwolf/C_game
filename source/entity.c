@@ -71,6 +71,65 @@ double CalculateYPointRotation(Point *offsetLocation, double rotation)
     return (offsetLocation->x * sin(rotation)) + (offsetLocation->y * cos(rotation));
 }
 
+/// @brief Finds the centroid of the polygon based on its vertices and adjusts the vertices based on it.
+/// Entity must have at least three vertices and must be defined so as its area != 0.
+/// @param entity The entity holding vertex data.
+void CalculateCentroidAndAlignVertices(Entity *entity)
+{
+    if (entity->baseVertices.length < 3)
+    {
+        return;
+    }
+
+    int i;
+    int j;
+    double areaOfCurrentI;
+    double tempArea = 0.0;
+    double tempX = 0.0;
+    double tempY = 0.0;
+
+    // Unused for now, possibly use for weighted interactions?
+    double area;
+
+    for (i = entity->baseVertices.length - 1, j = 0; j < entity->baseVertices.length; i = j, j++)
+    {
+        ListElmt *elementAtI;
+        ListElmt *elementAtJ;
+
+        list_get_element_at_position(&entity->baseVertices, &elementAtI, i);
+        list_get_element_at_position(&entity->baseVertices, &elementAtJ, j);
+
+        Point *pointAtI = ((Point *)elementAtI->data);
+        Point *pointAtJ = ((Point *)elementAtJ->data);
+
+        areaOfCurrentI = (pointAtI->x * pointAtJ->y) - (pointAtJ->x * pointAtI->y);
+
+        tempArea += areaOfCurrentI;
+        tempX += (pointAtJ->x + pointAtI->x) * areaOfCurrentI;
+        tempY += (pointAtJ->y + pointAtI->y) * areaOfCurrentI;
+    }
+
+    area = tempArea / 2;
+
+    if (tempArea == 0)
+    {
+        return;
+    }
+
+    double centroidX = tempX / (3.0 * tempArea);
+    double centroidY = tempY / (3.0 * tempArea);
+
+    ListElmt *referenceElement = entity->baseVertices.head;
+    while (referenceElement != NULL)
+    {
+        Point *referencePoint = referenceElement->data;
+        referencePoint->x -= centroidX;
+        referencePoint->y -= centroidY;
+
+        referenceElement = referenceElement->next;
+    }
+}
+
 void SetupRandomVelocity(Entity *settingUpEntity)
 {
     double randomDouble;
@@ -237,12 +296,14 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
     Polyline(*hdc, convertedVertices, counter + 1);
 
     // TODO: Might be worth just using LineTo and MoveEx instead of Polyline due
-    // to having to convert to POINT rather than Point
+    // to having to convert to POINT rather than Point, plus apparently faster
 
 #ifdef DEBUG
     TCHAR buffer[16];
     _stprintf(buffer, TEXT("%d"), entity->entityNumber);
-    TextOut(*hdc, entity->location.x, entity->location.y, buffer, _tcslen(buffer));
+    // The text offset for this font is wonky so
+    // location is more accurate when slightly higher and left
+    TextOut(*hdc, entity->location.x - 4, entity->location.y - 4, buffer, _tcslen(buffer));
 #endif
 }
 

@@ -3,7 +3,6 @@
 
 void SpawnPlayerFighter()
 {
-
     Entity *settingUpEntity;
 
     ZeroAndInitEntity(&settingUpEntity);
@@ -60,6 +59,7 @@ void SetupFighterVertices(Entity *settingUpEntity)
 
     list_insert(&settingUpEntity->baseVertices, baseVertex);
 
+    CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
 }
 

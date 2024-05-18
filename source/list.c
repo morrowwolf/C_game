@@ -231,11 +231,11 @@ int list_get_element_position(List *list, ListElmt *element)
 
     int i;
     ListElmt *referenceElement = list->head;
-    for (i = 1; i < list->length; i++)
+    for (i = 0; i < list->length; i++)
     {
         if (element == referenceElement)
         {
-            return i - 1;
+            return i;
         }
     }
 
@@ -256,11 +256,11 @@ int list_get_data_position(List *list, void *data)
 
     int i;
     ListElmt *referenceElement = list->head;
-    for (i = 1; i < list->length; i++)
+    for (i = 0; i < list->length; i++)
     {
         if (data == referenceElement->data)
         {
-            return i - 1;
+            return i;
         }
     }
 
@@ -276,7 +276,7 @@ int list_get_element_at_position(List *list, ListElmt **element, int position)
 
     ListElmt *referenceElement = list->head;
     int i;
-    for (i = 1; i < position; i++)
+    for (i = 0; i < position; i++)
     {
         referenceElement = referenceElement->next;
     }

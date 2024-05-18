@@ -39,6 +39,8 @@ void CalculateAndSetRotationOffsetVertices(Entity *entity);
 double CalculateXPointRotation(Point *offsetLocation, double rotation);
 double CalculateYPointRotation(Point *offsetLocation, double rotation);
 
+void CalculateCentroidAndAlignVertices(Entity *entity);
+
 void SetupRandomVelocity(Entity *);
 void SetupRandomRotation(Entity *);
 void SetupRandomRotationSpeed(Entity *);

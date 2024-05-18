@@ -1,13 +1,7 @@
 #include "../../headers/entity/asteroid.h"
 
-#define DEFAULT_AXIS_LENGTH 16
-#define DEFAULT_AXIS_VARIATION 8
-#define AXIS_VARIATION_CALCULATION(value) \
-    ((value % DEFAULT_AXIS_VARIATION) * SIGNOF(value))
-
 void SpawnAsteroid()
 {
-
     Entity *settingUpEntity;
 
     ZeroAndInitEntity(&settingUpEntity);
@@ -36,6 +30,10 @@ void OnDeathAsteroid(Entity *entity)
     EntityDeath(entity);
 }
 
+#define DEFAULT_AXIS_LENGTH 16
+#define DEFAULT_AXIS_VARIATION 8
+#define AXIS_VARIATION_CALCULATION(value) \
+    (value % DEFAULT_AXIS_VARIATION)
 void SetupAsteroidVertices(Entity *settingUpEntity)
 {
     short deltaX;
@@ -81,8 +79,10 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
 
     list_insert(&settingUpEntity->baseVertices, baseVertex);
 
+    CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
 }
 
-#undef defaultAxisLength
-#undef defaultAxisVariation
+#undef DEFAULT_AXIS_LENGTH
+#undef DEFAULT_AXIS_VARIATION
+#undef AXIS_VARIATION_CALCULATION
