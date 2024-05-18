@@ -32,33 +32,35 @@ void SetupFighterVertices(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    Point *vertex = malloc(sizeof(Point));
+    Point *baseVertex = malloc(sizeof(Point));
 
-    vertex->x = 5;
-    vertex->y = 0;
+    baseVertex->x = 5;
+    baseVertex->y = 0;
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
 
-    vertex = malloc(sizeof(Point));
+    baseVertex = malloc(sizeof(Point));
 
-    vertex->x = -5;
-    vertex->y = -5;
+    baseVertex->x = -5;
+    baseVertex->y = -5;
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
 
-    vertex = malloc(sizeof(Point));
+    baseVertex = malloc(sizeof(Point));
 
-    vertex->x = -2;
-    vertex->y = 0;
+    baseVertex->x = -2;
+    baseVertex->y = 0;
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
 
-    vertex = malloc(sizeof(Point));
+    baseVertex = malloc(sizeof(Point));
 
-    vertex->x = -5;
-    vertex->y = 5;
+    baseVertex->x = -5;
+    baseVertex->y = 5;
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
+
+    CalculateAndSetRotationOffsetVertices(settingUpEntity);
 }
 
 void OnDeathFighter(Entity *entity)

@@ -44,42 +44,44 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    Point *vertex = malloc(sizeof(Point));
+    Point *baseVertex = malloc(sizeof(Point));
 
-    vertex->x = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
-    vertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
+    baseVertex->x = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
+    baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->vertices, vertex);
-
-    RANDOMIZE(deltaX);
-    RANDOMIZE(deltaY);
-
-    vertex = malloc(sizeof(Point));
-
-    vertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
-    vertex->y = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
-
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
 
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    vertex = malloc(sizeof(Point));
+    baseVertex = malloc(sizeof(Point));
 
-    vertex->x = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
-    vertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
+    baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
+    baseVertex->y = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
 
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    vertex = malloc(sizeof(Point));
+    baseVertex = malloc(sizeof(Point));
 
-    vertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
-    vertex->y = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
+    baseVertex->x = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
+    baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->vertices, vertex);
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
+
+    RANDOMIZE(deltaX);
+    RANDOMIZE(deltaY);
+
+    baseVertex = malloc(sizeof(Point));
+
+    baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
+    baseVertex->y = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
+
+    list_insert(&settingUpEntity->baseVertices, baseVertex);
+
+    CalculateAndSetRotationOffsetVertices(settingUpEntity);
 }
 
 #undef defaultAxisLength

@@ -19,17 +19,25 @@ struct EntityInternal
     double rotationSpeed;
     double radius;
 
-    List vertices;               // List of Point
+    List baseVertices;           // List of Point
     List rotationOffsetVertices; // List of Point
 
     List onCollision; // List of int (*)(Entity *, Entity *)
     List onDeath;     // List of void (*)(Entity *)
     List onDraw;      // List of void (*)(Entity *, HDC *)
     List onTick;      // List of void (*)(Entity *)
+
+#ifdef DEBUG
+    int colliding;
+#endif
 };
 
 void ZeroAndInitEntity(Entity **);
 void EntityDeath(Entity *);
+
+void CalculateAndSetRotationOffsetVertices(Entity *entity);
+double CalculateXPointRotation(Point *offsetLocation, double rotation);
+double CalculateYPointRotation(Point *offsetLocation, double rotation);
 
 void SetupRandomVelocity(Entity *);
 void SetupRandomRotation(Entity *);
@@ -48,10 +56,9 @@ void OnDrawVertexLines(Entity *, HDC *);
 #define COLLISION_CONTINUE 1
 #define COLLISION_OVER 0
 void OnTickCheckCollision(Entity *);
+int isInBetween(double primary, double firstMarker, double secondMarker);
 
 void OnTickRotation(Entity *);
-double CalculateXPointRotation(Point *offsetLocation, double rotation);
-double CalculateYPointRotation(Point *offsetLocation, double rotation);
 
 void OnTickVelocity(Entity *);
 

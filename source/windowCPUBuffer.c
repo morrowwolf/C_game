@@ -60,7 +60,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
             referenceElementEntities = referenceElementEntities->next;
         }
 
-        TCHAR buffer[16];
+        TCHAR buffer[32];
 
 #ifdef DEBUG
         int i;
@@ -76,6 +76,17 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
             TextOut(bufferDC, i + (12 * (i - 48)), 20, buffer, _tcslen(buffer));
         }
 
+        if (GAMESTATE->fighters.length > 0)
+        {
+            if (((Entity *)(GAMESTATE->fighters.head->data))->colliding)
+            {
+                TextOut(bufferDC, 12, 40, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
+            }
+            else
+            {
+                TextOut(bufferDC, 12, 40, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
+            }
+        }
 #endif
 
         _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
