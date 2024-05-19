@@ -97,6 +97,8 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
         TextOut(bufferDC, DEFAULT_SCREEN_SIZE_X / 2, DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
 
+        GdiFlush();
+
         ReleaseMutex(SCREEN->bufferDrawingMutexes[id]);
 
         WaitForSingleObject(SCREEN->bufferRedrawSemaphores[id], INFINITE);
