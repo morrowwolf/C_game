@@ -9,7 +9,7 @@ typedef struct EntityInternal Entity;
 
 struct EntityInternal
 {
-    unsigned int entityNumber;
+    unsigned long long entityNumber;
 #define ENTITY_ALIVE 1
 #define ENTITY_DEAD 0
     short alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead

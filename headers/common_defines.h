@@ -41,7 +41,7 @@ typedef struct
 
 typedef struct
 {
-    unsigned int runningEntityID;
+    unsigned long long runningEntityID;
     List entities;     // list of Entity
     List deadEntities; // list of Entity, holds memory references to free at end of gamestate cycle
     List asteroids;    // list of Entity
