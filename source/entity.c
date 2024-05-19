@@ -276,28 +276,21 @@ int OnCollisionDeath(Entity *entity, Entity *collidingEntity)
 
 void OnDrawVertexLines(Entity *entity, HDC *hdc)
 {
-    unsigned short counter = 0;
-    POINT convertedVertices[MAX_VERTICES + 1];
-
     ListElmt *referenceElement = entity->rotationOffsetVertices.head;
+    Point *referencePoint = referenceElement->data;
+    MoveToEx(*hdc, round(entity->location.x + referencePoint->x), round(entity->location.y + referencePoint->y), NULL);
 
+    referenceElement = referenceElement->next;
     while (referenceElement != NULL)
     {
-        Point *referencePoint = referenceElement->data;
-        convertedVertices[counter].x = round(entity->location.x + referencePoint->x);
-        convertedVertices[counter].y = round(entity->location.y + referencePoint->y);
+        referencePoint = referenceElement->data;
+        LineTo(*hdc, round(entity->location.x + referencePoint->x), round(entity->location.y + referencePoint->y));
         referenceElement = referenceElement->next;
-        counter++;
     }
 
-    // NOLINTNEXTLINE
-    convertedVertices[counter].x = convertedVertices[0].x;
-    convertedVertices[counter].y = convertedVertices[0].y;
-
-    Polyline(*hdc, convertedVertices, counter + 1);
-
-    // TODO: Might be worth just using LineTo and MoveEx instead of Polyline due
-    // to having to convert to POINT rather than Point, plus apparently faster
+    referenceElement = entity->rotationOffsetVertices.head;
+    referencePoint = referenceElement->data;
+    LineTo(*hdc, round(entity->location.x + referencePoint->x), round(entity->location.y + referencePoint->y));
 
 #ifdef DEBUG
     TCHAR buffer[16];
