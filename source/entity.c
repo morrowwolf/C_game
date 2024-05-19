@@ -297,7 +297,7 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
     _stprintf(buffer, TEXT("%d"), entity->entityNumber);
     // The text offset for this font is wonky so
     // location is more accurate when slightly higher and left
-    TextOut(*hdc, entity->location.x - 4, entity->location.y - 4, buffer, _tcslen(buffer));
+    TextOut(*hdc, entity->location.x - 3, entity->location.y + 4, buffer, _tcslen(buffer));
 #endif
 }
 
@@ -407,35 +407,38 @@ void OnTickCheckCollision(Entity *entity)
                 double diffX = entityPointOne.x - entityPointTwo.x;
                 double diffY = entityPointOne.y - entityPointTwo.y;
 
-                double slope;
+                double slopeOfEntityLine;
                 if (diffX == 0.0 || diffY == 0.0)
                 {
-                    slope = 0.0;
+                    slopeOfEntityLine = 0.0;
                 }
                 else
                 {
-                    slope = diffY / diffX;
+                    slopeOfEntityLine = diffY / diffX;
                 }
 
-                double lineConstant = entityPointOne.y - (slope * entityPointOne.x);
+                double lineConstant = entityPointOne.y - (slopeOfEntityLine * entityPointOne.x);
 
-                double numerator = (slope * otherEntityPointPrimary.x) + (-1.0 * otherEntityPointPrimary.y) + lineConstant;
+                double numerator = (slopeOfEntityLine * otherEntityPointPrimary.x) + (-1.0 * otherEntityPointPrimary.y) + lineConstant;
 
-                // double denominator = sqrt(pow(slope, 2.0) + 1.0);
+                double denominator = sqrt(pow(slopeOfEntityLine, 2.0) + 1.0);
 
-                // double distanceFromOtherEntityPointPrimaryToEntityLine = numerator / denominator;
+                double distanceFromOtherEntityPointPrimaryToEntityLine = fabs(numerator / denominator);
 
-                double distanceFromOtherEntityPointPrimaryToOneOfTheEntityPoints = fabs(numerator / slope);
+                double angleFromOtherEntityPointPrimaryToEntityLine = atan2(-1 * diffX, diffY);
 
-                double distanceFromOtherEntityPointPrimaryToTheOtherEntityPoint = fabs(numerator);
+                double angleDiff = fabs(angleFromOtherEntityPointPrimaryToEntityLine - angleToPointSecondary);
 
-                // TODO: Find the actual length from EntityPointPrimary to the Line at the correct angle
-                //  This is really close to correct and collision is far better now
-                //  Will come back when my brain starts working again
+                if (angleDiff > M_PI)
+                {
+                    angleDiff = (2 * M_PI) - angleDiff;
+                }
+
+                double distanceFromOtherEntityPointPrimaryToEntityLineAtCorrectAngle = fabs(distanceFromOtherEntityPointPrimaryToEntityLine / cos(angleDiff));
 
                 double lengthOfOtherEntityLine = sqrt(pow(otherEntityPointSecondary.x - otherEntityPointPrimary.x, 2.0) + pow(otherEntityPointSecondary.y - otherEntityPointPrimary.y, 2.0));
 
-                if (distanceFromOtherEntityPointPrimaryToOneOfTheEntityPoints > lengthOfOtherEntityLine && distanceFromOtherEntityPointPrimaryToTheOtherEntityPoint > lengthOfOtherEntityLine)
+                if (distanceFromOtherEntityPointPrimaryToEntityLineAtCorrectAngle > lengthOfOtherEntityLine)
                 {
                     referenceElementVertexEntity = referenceElementVertexEntity->next;
                     continue;

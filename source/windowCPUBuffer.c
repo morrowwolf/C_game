@@ -23,6 +23,11 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
     // NOLINTNEXTLINE
     HGDIOBJ original = SelectObject(bufferDC, GetStockObject(WHITE_PEN));
 
+    SetMapMode(bufferDC, MM_ANISOTROPIC);
+    SetWindowExtEx(bufferDC, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y, NULL);
+    SetViewportExtEx(bufferDC, DEFAULT_SCREEN_SIZE_X, -DEFAULT_SCREEN_SIZE_Y, NULL);
+    SetViewportOrgEx(bufferDC, 0, DEFAULT_SCREEN_SIZE_Y, NULL);
+
     SetTextAlign(bufferDC, GetTextAlign(bufferDC) & (~TA_BASELINE | ~TA_CENTER));
     SetTextColor(bufferDC, RGB(255, 255, 255));
     SetBkMode(bufferDC, TRANSPARENT);
@@ -71,9 +76,9 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
                 continue;
             }
             _stprintf(buffer, TEXT("%c"), i);
-            TextOut(bufferDC, i + (12 * (i - 48)), 0, buffer, _tcslen(buffer));
+            TextOut(bufferDC, i + (12 * (i - 48)), DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
             _stprintf(buffer, TEXT("%d"), GAMESTATE->keys[i]);
-            TextOut(bufferDC, i + (12 * (i - 48)), 20, buffer, _tcslen(buffer));
+            TextOut(bufferDC, i + (12 * (i - 48)), DEFAULT_SCREEN_SIZE_Y - 30, buffer, _tcslen(buffer));
         }
 
         if (GAMESTATE->fighters.length > 0)
@@ -90,7 +95,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
 #endif
 
         _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
-        TextOut(bufferDC, DEFAULT_SCREEN_SIZE_X / 2, 10, buffer, _tcslen(buffer));
+        TextOut(bufferDC, DEFAULT_SCREEN_SIZE_X / 2, DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
 
         ReleaseMutex(SCREEN->bufferDrawingMutexes[id]);
 

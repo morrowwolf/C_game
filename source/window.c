@@ -40,7 +40,7 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
     hUpdateWindowTimer = CreateWaitableTimer(NULL, TRUE, NULL);
     SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 1L, NULL, NULL, 0);
 
-    long windowStyleFlags = WS_OVERLAPPEDWINDOW;
+    long windowStyleFlags = WS_OVERLAPPEDWINDOW; // TODO: Kill free resize when we make menu
 
     RECT windowRect;
     windowRect.left = 0;
@@ -121,7 +121,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         SetMapMode(hdc, MM_ANISOTROPIC);
         SetWindowExtEx(hdc, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y, NULL);
-        SetViewportExtEx(hdc, rect.right, rect.bottom, NULL);
+        SetViewportExtEx(hdc, rect.right, -rect.bottom, NULL);
+        SetViewportOrgEx(hdc, 0, rect.bottom, NULL);
 
         int i;
 

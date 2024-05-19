@@ -126,7 +126,7 @@ void OnTickKeyAcceleration(Entity *entity)
             entity->velocity.y += THRUSTER_ACCELERATION * sin(entity->rotation);
         }
 
-        if (GAMESTATE->keys['E'])
+        if (GAMESTATE->keys['Q'])
         {
             entity->velocity.x += THRUSTER_ACCELERATION * cos(entity->rotation + M_PI_2);
             entity->velocity.y += THRUSTER_ACCELERATION * sin(entity->rotation + M_PI_2);
@@ -138,7 +138,7 @@ void OnTickKeyAcceleration(Entity *entity)
             entity->velocity.y += THRUSTER_ACCELERATION * sin(entity->rotation + M_PI);
         }
 
-        if (GAMESTATE->keys['Q'])
+        if (GAMESTATE->keys['E'])
         {
             entity->velocity.x += THRUSTER_ACCELERATION * cos(entity->rotation + M_PI + M_PI_2);
             entity->velocity.y += THRUSTER_ACCELERATION * sin(entity->rotation + M_PI + M_PI_2);
@@ -147,12 +147,12 @@ void OnTickKeyAcceleration(Entity *entity)
 
     if (GAMESTATE->keys['A'])
     {
-        entity->rotationSpeed = -ROTATION_ACCELERATION;
+        entity->rotationSpeed = +ROTATION_ACCELERATION;
     }
 
     if (GAMESTATE->keys['D'])
     {
-        entity->rotationSpeed = +ROTATION_ACCELERATION;
+        entity->rotationSpeed = -ROTATION_ACCELERATION;
     }
 
     if (!GAMESTATE->keys['A'] && !GAMESTATE->keys['D'])
