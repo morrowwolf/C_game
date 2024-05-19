@@ -88,7 +88,7 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
     double tempX = 0.0;
     double tempY = 0.0;
 
-    // Unused for now, possibly use for weighted interactions?
+    // NOLINTNEXTLINE - Unused for now, possibly use for weighted interactions?
     double area;
 
     for (i = entity->baseVertices.length - 1, j = 0; j < entity->baseVertices.length; i = j, j++)
@@ -109,6 +109,7 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
         tempY += (pointAtJ->y + pointAtI->y) * areaOfCurrentI;
     }
 
+    // NOLINTNEXTLINE
     area = tempArea / 2;
 
     if (tempArea == 0)
@@ -370,7 +371,7 @@ void OnTickCheckCollision(Entity *entity)
                 otherEntityPointSecondary.y = ((Point *)referenceElementVertexOtherEntity->next->data)->y + referenceEntity->location.y;
             }
 
-            double angleToPointSecondary = atan2(otherEntityPointPrimary.y - otherEntityPointSecondary.y, otherEntityPointPrimary.x - otherEntityPointSecondary.x);
+            double angleToPointSecondary = atan2(otherEntityPointSecondary.y - otherEntityPointPrimary.y, otherEntityPointSecondary.x - otherEntityPointPrimary.x);
 
             ListElmt *referenceElementVertexEntity = entity->rotationOffsetVertices.head;
             while (referenceElementVertexEntity != NULL)
@@ -390,18 +391,10 @@ void OnTickCheckCollision(Entity *entity)
                     entityPointTwo.y = ((Point *)referenceElementVertexEntity->next->data)->y + entity->location.y;
                 }
 
-                double angleToPointOne = atan2(otherEntityPointPrimary.y - entityPointOne.y, otherEntityPointPrimary.x - entityPointOne.x);
-                double angleToPointTwo = atan2(otherEntityPointPrimary.y - entityPointTwo.y, otherEntityPointPrimary.x - entityPointTwo.x);
+                double angleToPointOne = atan2(entityPointOne.y - otherEntityPointPrimary.y, entityPointOne.x - otherEntityPointPrimary.x);
+                double angleToPointTwo = atan2(entityPointTwo.y - otherEntityPointPrimary.y, entityPointTwo.x - otherEntityPointPrimary.x);
 
                 if (fabs(angleToPointOne - angleToPointTwo) > M_PI)
-                {
-                    if (!isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
-                    {
-                        referenceElementVertexEntity = referenceElementVertexEntity->next;
-                        continue;
-                    }
-                }
-                else
                 {
                     if (isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
                     {
@@ -409,17 +402,47 @@ void OnTickCheckCollision(Entity *entity)
                         continue;
                     }
                 }
+                else
+                {
+                    if (!isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
+                    {
+                        referenceElementVertexEntity = referenceElementVertexEntity->next;
+                        continue;
+                    }
+                }
 
-                double topEquation = ((entityPointOne.y - otherEntityPointPrimary.y) * (entityPointTwo.x - entityPointOne.x)) - ((entityPointOne.x - otherEntityPointPrimary.x) * (entityPointTwo.y - entityPointOne.y));
-                double lengthOfEntityLine = sqrt(pow(entityPointTwo.x - entityPointOne.x, 2.0) + pow(entityPointTwo.y - entityPointOne.y, 2));
+                double diffX = entityPointOne.x - entityPointTwo.x;
+                double diffY = entityPointOne.y - entityPointTwo.y;
 
-                double intersectionLocation = topEquation / pow(lengthOfEntityLine, 2.0);
+                double slope;
+                if (diffX == 0.0 || diffY == 0.0)
+                {
+                    slope = 0.0;
+                }
+                else
+                {
+                    slope = diffY / diffX;
+                }
 
-                double distanceBetweenIntersectAndOtherEntityPointPrimary = fabs(intersectionLocation) * lengthOfEntityLine;
+                double lineConstant = entityPointOne.y - (slope * entityPointOne.x);
 
-                double lengthOfOtherEntityLine = sqrt(pow(otherEntityPointSecondary.x - otherEntityPointPrimary.x, 2.0) + pow(otherEntityPointSecondary.y - otherEntityPointPrimary.y, 2));
+                double numerator = (slope * otherEntityPointPrimary.x) + (-1.0 * otherEntityPointPrimary.y) + lineConstant;
 
-                if (lengthOfOtherEntityLine < distanceBetweenIntersectAndOtherEntityPointPrimary)
+                // double denominator = sqrt(pow(slope, 2.0) + 1.0);
+
+                // double distanceFromOtherEntityPointPrimaryToEntityLine = numerator / denominator;
+
+                double distanceFromOtherEntityPointPrimaryToOneOfTheEntityPoints = fabs(numerator / slope);
+
+                double distanceFromOtherEntityPointPrimaryToTheOtherEntityPoint = fabs(numerator);
+
+                // TODO: Find the actual length from EntityPointPrimary to the Line at the correct angle
+                //  This is really close to correct and collision is far better now
+                //  Will come back when my brain starts working again
+
+                double lengthOfOtherEntityLine = sqrt(pow(otherEntityPointSecondary.x - otherEntityPointPrimary.x, 2.0) + pow(otherEntityPointSecondary.y - otherEntityPointPrimary.y, 2.0));
+
+                if (distanceFromOtherEntityPointPrimaryToOneOfTheEntityPoints > lengthOfOtherEntityLine && distanceFromOtherEntityPointPrimaryToTheOtherEntityPoint > lengthOfOtherEntityLine)
                 {
                     referenceElementVertexEntity = referenceElementVertexEntity->next;
                     continue;
@@ -500,7 +523,7 @@ int isInBetween(double primary, double firstMarker, double secondMarker)
     {
         return 0;
     }
-    else if (firstMarker > primary || secondMarker < primary)
+    else if (firstMarker < secondMarker && (primary < firstMarker || primary > secondMarker))
     {
         return 0;
     }
