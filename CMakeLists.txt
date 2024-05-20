@@ -4,11 +4,8 @@ project(C_game VERSION 0.1.0 LANGUAGES C)
 include(CTest)
 enable_testing()
 
-#debug
+#debug stuff
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
-
-#release?
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MD /MT")
 
 set(INCLUDED_FILES  source/main.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity.c)

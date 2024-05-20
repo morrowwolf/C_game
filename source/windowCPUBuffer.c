@@ -102,7 +102,6 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         ReleaseMutex(SCREEN->bufferDrawingMutexes[id]);
 
         WaitForSingleObject(SCREEN->bufferRedrawSemaphores[id], INFINITE);
-        ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[id], 1, NULL);
     }
 
     SelectObject(bufferDC, original);

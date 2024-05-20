@@ -35,10 +35,10 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
 
     HANDLE hUpdateWindowTimer;
     LARGE_INTEGER updateWindowTimerTime;
-    updateWindowTimerTime.QuadPart = -10000LL;
+    updateWindowTimerTime.QuadPart = -40000LL;
 
     hUpdateWindowTimer = CreateWaitableTimer(NULL, TRUE, NULL);
-    SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 1L, NULL, NULL, 0);
+    SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
 
     long windowStyleFlags = WS_OVERLAPPEDWINDOW; // TODO: Kill free resize when we make menu
 
@@ -57,6 +57,7 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
 
     HWND hwnd = SCREEN->windowHandle;
 
+    ShowCursor(FALSE);
     ShowWindow(hwnd, iCmdShow);
     UpdateWindow(hwnd);
 
@@ -69,6 +70,7 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
         {
             InvalidateRect(hwnd, NULL, FALSE);
             UpdateWindow(hwnd);
+            SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
         }
 
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))

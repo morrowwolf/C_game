@@ -7,7 +7,6 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     HANDLE hTimer;
     LARGE_INTEGER liDueTime;
-
     liDueTime.QuadPart = -40000LL;
 
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
