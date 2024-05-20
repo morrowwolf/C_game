@@ -4,17 +4,10 @@
   "editor.formatOnSave": true,
   "files.associations": {
     "*.C": "c",
-    "windows.h": "c",
-    "gdiplustypes.h": "c",
-    "threads.h": "c",
-    "bcrypt.h": "c",
-    "helpers.h": "c",
-    "common_defines.h": "c",
-    "entity.h": "c",
-    "gamestate.h": "c",
-    "asteroid.h": "c",
-    "fighter.h": "c"
+    "*.h": "c"
   },
   "c-cpp-flylint.language": "c",
-  "c-cpp-flylint.clang.standard": ["c89", "c99", "c11", "c17", "c18"]
+  "c-cpp-flylint.clang.standard": ["c89", "c99", "c11", "c17", "c18"],
+  "c-cpp-flylint.clang.extraArgs": ["-Wno-pragma-once-outside-header"],
+  "c-cpp-flylint.cppcheck.standard": ["c89", "c99", "c11", "c17", "c18"]
 }

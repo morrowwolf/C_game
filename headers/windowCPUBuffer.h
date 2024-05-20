@@ -1,3 +1,4 @@
+#pragma once
 #ifndef WINDOWCPUBUFFER_H_
 #define WINDOWCPUBUFFER_H_
 

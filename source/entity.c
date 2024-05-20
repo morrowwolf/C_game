@@ -83,16 +83,16 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
 
     int i;
     int j;
-    double areaOfCurrentI;
     double tempArea = 0.0;
     double tempX = 0.0;
     double tempY = 0.0;
 
-    // NOLINTNEXTLINE - Unused for now, possibly use for weighted interactions?
-    double area;
+    // Unused for now, possibly use for weighted interactions?
+    // double area;
 
     for (i = entity->baseVertices.length - 1, j = 0; j < entity->baseVertices.length; i = j, j++)
     {
+        double areaOfCurrentI;
         ListElmt *elementAtI;
         ListElmt *elementAtJ;
 
@@ -109,8 +109,7 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
         tempY += (pointAtJ->y + pointAtI->y) * areaOfCurrentI;
     }
 
-    // NOLINTNEXTLINE
-    area = tempArea / 2;
+    // area = tempArea / 2;
 
     if (tempArea == 0)
     {

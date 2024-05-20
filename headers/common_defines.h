@@ -1,3 +1,4 @@
+#pragma once
 #ifndef HELPER_H_
 #define HELPER_H_
 
@@ -13,6 +14,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include "list.h"
+#include "read_write_lock.h"
 
 #pragma comment(lib, "bcrypt.lib")
 

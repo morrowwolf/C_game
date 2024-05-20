@@ -1,3 +1,4 @@
+#pragma once
 #ifndef FIGHTER_H_
 #define FIGHTER_H_
 
