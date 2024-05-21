@@ -62,26 +62,33 @@ DWORD WINAPI WindowHandler(LPVOID lpParam)
     UpdateWindow(hwnd);
 
     short quit = FALSE;
+    short lastMessage = TRUE;
     MSG msg;
 
     while (!quit)
     {
-        if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
+        while (!quit && lastMessage)
         {
-            InvalidateRect(hwnd, NULL, FALSE);
-            UpdateWindow(hwnd);
-            SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
+            if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
+            {
+                InvalidateRect(hwnd, NULL, FALSE);
+                UpdateWindow(hwnd);
+                SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
+            }
+
+            if ((lastMessage = PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)))
+            {
+                if (msg.message == WM_QUIT)
+                {
+                    quit = TRUE;
+                }
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
         }
 
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-        {
-            if (msg.message == WM_QUIT)
-            {
-                quit = TRUE;
-            }
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+        MsgWaitForMultipleObjects(1, &hUpdateWindowTimer, FALSE, INFINITE, QS_ALLINPUT);
+        lastMessage = TRUE;
     }
 
     exit(msg.wParam);
