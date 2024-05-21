@@ -48,7 +48,8 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         asteroidSpawnDelayCounter++;
 
         // The following should always be last:
-        list_clear(&GAMESTATE->deadEntities);
+        // TODO: Change the remove function for deadEntities to use onDestroy
+        List_Clear(&GAMESTATE->deadEntities);
 
         WaitForSingleObject(hTimer, INFINITE);
     }

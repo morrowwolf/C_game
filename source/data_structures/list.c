@@ -1,28 +1,30 @@
 
-#include "../headers/list.h"
+#include "../../headers/data_structures/list.h"
 
-void list_init(List *list, void (*destroy)(void *data))
+void List_Init(List *list, void (*destroy)(void *data))
 {
-    list->length = 0;
+    ZeroMemory(list, sizeof(List));
     list->destroy = destroy;
-    list->head = NULL;
-    list->tail = NULL;
+    ReadWriteLock_Init(&list->readWriteLock);
 }
 
-void list_clear(List *list)
+void List_Clear(List *list)
 {
+    ReadWriteLock_GetWritePermission(list->readWriteLock);
+
     while (list->length > 0)
     {
         // NOLINTNEXTLINE
-        list_remove_element(list, list->tail);
+        List_RemoveElement(list, list->tail);
     }
 
-    list_init(list, NULL);
+    ReadWriteLock_Destroy(list->readWriteLock);
+    List_Init(list, NULL);
 }
 
-int list_insert(List *list, const void *data)
+int List_Insert(List *list, const void *data)
 {
-    if (!list_ins_next(list, list->tail, data))
+    if (!List_InsertNext(list, list->tail, data))
     {
         return 0;
     }
@@ -30,15 +32,15 @@ int list_insert(List *list, const void *data)
     return 1;
 }
 
-int list_insert_at(List *list, const void *data, int position)
+int List_InsertAt(List *list, const void *data, int position)
 {
     ListElmt *referenceElement;
-    if (!list_get_element_at_position(list, &referenceElement, position))
+    if (!List_GetElementAtPosition(list, &referenceElement, position))
     {
         return 0;
     }
 
-    if (!list_ins_next(list, referenceElement, data))
+    if (!List_InsertNext(list, referenceElement, data))
     {
         return 0;
     }
@@ -46,7 +48,7 @@ int list_insert_at(List *list, const void *data, int position)
     return 1;
 }
 
-int list_ins_next(List *list, ListElmt *element, const void *data)
+int List_InsertNext(List *list, ListElmt *element, const void *data)
 {
     ListElmt *newElement;
 
@@ -90,7 +92,7 @@ int list_ins_next(List *list, ListElmt *element, const void *data)
     return 1;
 }
 
-int list_insert_prev(List *list, ListElmt *element, const void *data)
+int List_InsertPrevious(List *list, ListElmt *element, const void *data)
 {
     ListElmt *newElement;
 
@@ -135,15 +137,15 @@ int list_insert_prev(List *list, ListElmt *element, const void *data)
     return 1;
 }
 
-int list_remove_position(List *list, int position)
+int List_RemovePosition(List *list, int position)
 {
     ListElmt *referenceElement;
-    if (!list_get_element_at_position(list, &referenceElement, position))
+    if (!List_GetElementAtPosition(list, &referenceElement, position))
     {
         return 0;
     }
 
-    if (!list_remove_element(list, referenceElement))
+    if (!List_RemoveElement(list, referenceElement))
     {
         return 0;
     }
@@ -157,7 +159,7 @@ int list_remove_position(List *list, int position)
 /// @param list The list to remove the element from.
 /// @param element The element to remove from the list.
 /// @return Returns 0 if the list is empty or the element is NULL, returns 1 on success.
-int list_remove_element(List *list, ListElmt *element)
+int List_RemoveElement(List *list, ListElmt *element)
 {
     if (element == NULL || list->length == 0)
     {
@@ -206,15 +208,15 @@ int list_remove_element(List *list, ListElmt *element)
 /// @param list The list to remove the element from.
 /// @param data The data pointer to compare against the elements in the list.
 /// @return Returns 0 if unable to remove the element. Otherwise returns 1.
-int list_remove_element_with_matching_data(List *list, void *data)
+int List_RemoveElementWithMatchingData(List *list, void *data)
 {
     ListElmt *referenceElement = NULL;
-    if (!list_get_element_with_matching_data(list, &referenceElement, data))
+    if (!List_GetElementWithMatchingData(list, &referenceElement, data))
     {
         return 0;
     }
 
-    return list_remove_element(list, referenceElement);
+    return List_RemoveElement(list, referenceElement);
 }
 
 /// @brief Finds an element in the list
@@ -222,7 +224,7 @@ int list_remove_element_with_matching_data(List *list, void *data)
 /// @param element The element to search for
 /// @return -1 if element not found, otherwise returns position of element
 /// Do not use this if you are cycling through a list, manually assign ListElmt through a while loop.
-int list_get_element_position(List *list, ListElmt *element)
+int List_GetElementPosition(List *list, ListElmt *element)
 {
     if (list->length < 1)
     {
@@ -247,7 +249,7 @@ int list_get_element_position(List *list, ListElmt *element)
 /// @param list The list to search through
 /// @param data The data pointer to search for
 /// @return -1 if data not found, otherwise returns element position holding the data.
-int list_get_data_position(List *list, void *data)
+int List_GetDataPosition(List *list, void *data)
 {
     if (list->length < 1)
     {
@@ -267,7 +269,7 @@ int list_get_data_position(List *list, void *data)
     return -1;
 }
 
-int list_get_element_at_position(List *list, ListElmt **element, int position)
+int List_GetElementAtPosition(List *list, ListElmt **element, int position)
 {
     if (position > list->length)
     {
@@ -291,7 +293,7 @@ int list_get_element_at_position(List *list, ListElmt **element, int position)
 /// @param element Reference to an element pointer that will be assigned to if matching data found.
 /// @param data The data we look for in the list.
 /// @return Returns 0 if not found, 1 if found data.
-int list_get_element_with_matching_data(List *list, ListElmt **element, void *data)
+int List_GetElementWithMatchingData(List *list, ListElmt **element, void *data)
 {
 
     ListElmt *referenceElement = list->head;
@@ -310,7 +312,7 @@ int list_get_element_with_matching_data(List *list, ListElmt **element, void *da
     return 1;
 }
 
-void list_free_on_remove(void *data)
+void List_FreeOnRemove(void *data)
 {
     free(data);
 }

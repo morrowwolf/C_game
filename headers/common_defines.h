@@ -13,8 +13,9 @@
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
-#include "list.h"
-#include "read_write_lock.h"
+#include "data_structures/list.h"
+#include "data_structures/list_iterator.h"
+#include "data_structures/read_write_lock.h"
 
 #pragma comment(lib, "bcrypt.lib")
 

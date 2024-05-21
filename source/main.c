@@ -7,10 +7,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	UNREFERENCED_PARAMETER(szCmdLine);
 
 	GAMESTATE = malloc(sizeof(Gamestate));
-	list_init(&GAMESTATE->entities, NULL);
-	list_init(&GAMESTATE->deadEntities, list_free_on_remove);
-	list_init(&GAMESTATE->asteroids, NULL);
-	list_init(&GAMESTATE->fighters, NULL);
+	List_Init(&GAMESTATE->entities, NULL);
+	List_Init(&GAMESTATE->deadEntities, List_FreeOnRemove);
+	List_Init(&GAMESTATE->asteroids, NULL);
+	List_Init(&GAMESTATE->fighters, NULL);
 	ZeroMemory(&GAMESTATE->keys, sizeof(GAMESTATE->keys));
 	GAMESTATE->runningEntityID = 0;
 

@@ -8,14 +8,15 @@ enable_testing()
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
 
 set(INCLUDED_FILES  source/main.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list_iterator.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/read_write_lock.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/asteroid.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/fighter.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/gamestate.c)
-set(INCLUDED_FILES ${INCLUDED_FILES} source/read_write_lock.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/window.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/windowCPUBuffer.c)
-set(INCLUDED_FILES ${INCLUDED_FILES} source/list.c)
 
 add_executable(C_game WIN32 ${INCLUDED_FILES})
 

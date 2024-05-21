@@ -14,19 +14,19 @@ void SpawnAsteroid()
     SetupAsteroidVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
 
-    // list_insert(&settingUpEntity->onCollision, OnCollisionDeath);
-    list_insert(&settingUpEntity->onDeath, OnDeathAsteroid);
-    list_insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    // list_insert(&settingUpEntity->onTick, OnTickCheckCollision);
-    list_insert(&settingUpEntity->onTick, OnTickRotation);
-    list_insert(&settingUpEntity->onTick, OnTickVelocity);
+    // List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
+    List_Insert(&settingUpEntity->onDeath, OnDeathAsteroid);
+    List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    // List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
+    List_Insert(&settingUpEntity->onTick, OnTickRotation);
+    List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
-    list_insert(&GAMESTATE->asteroids, settingUpEntity);
+    List_Insert(&GAMESTATE->asteroids, settingUpEntity);
 }
 
 void OnDeathAsteroid(Entity *entity)
 {
-    list_remove_element_with_matching_data(&GAMESTATE->asteroids, entity);
+    List_RemoveElementWithMatchingData(&GAMESTATE->asteroids, entity);
     EntityDeath(entity);
 }
 
@@ -47,7 +47,7 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
     baseVertex->x = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
@@ -57,7 +57,7 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
@@ -67,7 +67,7 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
     baseVertex->x = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
@@ -77,7 +77,7 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);

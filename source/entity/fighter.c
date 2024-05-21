@@ -12,15 +12,15 @@ void SpawnPlayerFighter()
     SetupFighterVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
 
-    list_insert(&settingUpEntity->onCollision, OnCollisionDeath);
-    list_insert(&settingUpEntity->onDeath, OnDeathFighter);
-    list_insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    list_insert(&settingUpEntity->onTick, OnTickCheckCollision);
-    list_insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
-    list_insert(&settingUpEntity->onTick, OnTickRotation);
-    list_insert(&settingUpEntity->onTick, OnTickVelocity);
+    List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
+    List_Insert(&settingUpEntity->onDeath, OnDeathFighter);
+    List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
+    List_Insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
+    List_Insert(&settingUpEntity->onTick, OnTickRotation);
+    List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
-    list_insert(&GAMESTATE->fighters, settingUpEntity);
+    List_Insert(&GAMESTATE->fighters, settingUpEntity);
 }
 
 void SetupFighterVertices(Entity *settingUpEntity)
@@ -36,28 +36,28 @@ void SetupFighterVertices(Entity *settingUpEntity)
     baseVertex->x = 5;
     baseVertex->y = 0;
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     baseVertex = malloc(sizeof(Point));
 
     baseVertex->x = -5;
     baseVertex->y = -5;
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     baseVertex = malloc(sizeof(Point));
 
     baseVertex->x = -2;
     baseVertex->y = 0;
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     baseVertex = malloc(sizeof(Point));
 
     baseVertex->x = -5;
     baseVertex->y = 5;
 
-    list_insert(&settingUpEntity->baseVertices, baseVertex);
+    List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
     CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
@@ -65,7 +65,7 @@ void SetupFighterVertices(Entity *settingUpEntity)
 
 void OnDeathFighter(Entity *entity)
 {
-    // list_remove_element_with_matching_data(&GAMESTATE->fighters, entity);
+    // List_RemoveElementWithMatchingData(&GAMESTATE->fighters, entity);
     EntityDeath(entity);
 }
 

@@ -23,6 +23,8 @@ struct EntityInternal
     List baseVertices;           // List of Point
     List rotationOffsetVertices; // List of Point
 
+    // Other than onDestroy we must promise we never write to
+    // global lists (whether add or remove) in these functions
     List onCollision; // List of int (*)(Entity *, Entity *)
     List onDeath;     // List of void (*)(Entity *)
     List onDraw;      // List of void (*)(Entity *, HDC *)

@@ -4,22 +4,25 @@ void ZeroAndInitEntity(Entity **entity)
 {
     *entity = malloc(sizeof(Entity));
     ZeroMemory(*entity, sizeof(Entity));
-    list_init(&(*entity)->baseVertices, list_free_on_remove);
-    list_init(&(*entity)->rotationOffsetVertices, list_free_on_remove);
-    list_init(&(*entity)->onCollision, NULL);
-    list_init(&(*entity)->onDeath, NULL);
-    list_init(&(*entity)->onDraw, NULL);
-    list_init(&(*entity)->onTick, NULL);
+    List_Init(&(*entity)->baseVertices, List_FreeOnRemove);
+    List_Init(&(*entity)->rotationOffsetVertices, List_FreeOnRemove);
+    List_Init(&(*entity)->onCollision, NULL);
+    List_Init(&(*entity)->onDeath, NULL);
+    List_Init(&(*entity)->onDraw, NULL);
+    List_Init(&(*entity)->onTick, NULL);
     (*entity)->entityNumber = GAMESTATE->runningEntityID;
     (*entity)->alive = ENTITY_ALIVE;
     GAMESTATE->runningEntityID += 1;
-    list_insert(&GAMESTATE->entities, *entity);
+    List_Insert(&GAMESTATE->entities, *entity);
 }
+
+// TODO: clear all the lists and remove from global list
+void EntityDestroy();
 
 void EntityDeath(Entity *entity)
 {
     entity->alive = ENTITY_DEAD;
-    // list_remove_element_with_matching_data(&GAMESTATE->entities, entity);
+    // List_RemoveElementWithMatchingData(&GAMESTATE->entities, entity);
     // list_insert(&GAMESTATE->deadEntities, entity);
 }
 
@@ -43,7 +46,7 @@ void CalculateAndSetRotationOffsetVertices(Entity *entity)
     }
     else
     {
-        list_clear(&entity->rotationOffsetVertices);
+        List_Clear(&entity->rotationOffsetVertices);
 
         ListElmt *referenceElementBaseVertices = entity->baseVertices.head;
         while (referenceElementBaseVertices != NULL)
@@ -54,7 +57,7 @@ void CalculateAndSetRotationOffsetVertices(Entity *entity)
             newRotationOffsetPoint->x = CalculateXPointRotation(referencePointVertices, entity->rotation);
             newRotationOffsetPoint->y = CalculateYPointRotation(referencePointVertices, entity->rotation);
 
-            list_insert(&entity->rotationOffsetVertices, newRotationOffsetPoint);
+            List_Insert(&entity->rotationOffsetVertices, newRotationOffsetPoint);
 
             referenceElementBaseVertices = referenceElementBaseVertices->next;
         }
@@ -96,8 +99,8 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
         ListElmt *elementAtI;
         ListElmt *elementAtJ;
 
-        list_get_element_at_position(&entity->baseVertices, &elementAtI, i);
-        list_get_element_at_position(&entity->baseVertices, &elementAtJ, j);
+        List_GetElementAtPosition(&entity->baseVertices, &elementAtI, i);
+        List_GetElementAtPosition(&entity->baseVertices, &elementAtJ, j);
 
         Point *pointAtI = ((Point *)elementAtI->data);
         Point *pointAtJ = ((Point *)elementAtJ->data);
@@ -303,7 +306,7 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
 void OnTickCheckCollision(Entity *entity)
 {
     List entitiesPotentialCollision;
-    list_init(&entitiesPotentialCollision, NULL);
+    List_Init(&entitiesPotentialCollision, NULL);
 
     ListElmt *referenceElement = GAMESTATE->entities.head;
     while (referenceElement != NULL)
@@ -320,7 +323,7 @@ void OnTickCheckCollision(Entity *entity)
                                                  fabs(referenceEntity->location.y - entity->location.y));
             if (referenceEntityDistance < (entity->radius + referenceEntity->radius))
             {
-                list_insert(&entitiesPotentialCollision, referenceEntity);
+                List_Insert(&entitiesPotentialCollision, referenceEntity);
             }
         }
         referenceElement = referenceElement->next;
@@ -328,7 +331,7 @@ void OnTickCheckCollision(Entity *entity)
 
     if (entitiesPotentialCollision.length < 1)
     {
-        list_clear(&entitiesPotentialCollision);
+        List_Clear(&entitiesPotentialCollision);
 
 #ifdef DEBUG
         entity->colliding = FALSE;
@@ -338,7 +341,7 @@ void OnTickCheckCollision(Entity *entity)
     }
 
     List entitiesColliding;
-    list_init(&entitiesColliding, NULL);
+    List_Init(&entitiesColliding, NULL);
 
     referenceElement = entitiesPotentialCollision.head;
     while (referenceElement != NULL)
@@ -443,7 +446,7 @@ void OnTickCheckCollision(Entity *entity)
                     continue;
                 }
 
-                list_insert(&entitiesColliding, referenceEntity);
+                List_Insert(&entitiesColliding, referenceEntity);
                 break;
             }
 
@@ -455,8 +458,8 @@ void OnTickCheckCollision(Entity *entity)
 
     if (entitiesColliding.length < 1)
     {
-        list_clear(&entitiesPotentialCollision);
-        list_clear(&entitiesColliding);
+        List_Clear(&entitiesPotentialCollision);
+        List_Clear(&entitiesColliding);
 
 #ifdef DEBUG
         entity->colliding = FALSE;
@@ -485,8 +488,8 @@ void OnTickCheckCollision(Entity *entity)
 
     if (collisionReturn != COLLISION_CONTINUE)
     {
-        list_clear(&entitiesPotentialCollision);
-        list_clear(&entitiesColliding);
+        List_Clear(&entitiesPotentialCollision);
+        List_Clear(&entitiesColliding);
         return;
     }
 
@@ -503,8 +506,8 @@ void OnTickCheckCollision(Entity *entity)
         referenceElement = referenceElement->next;
     }
 
-    list_clear(&entitiesPotentialCollision);
-    list_clear(&entitiesColliding);
+    List_Clear(&entitiesPotentialCollision);
+    List_Clear(&entitiesColliding);
 }
 
 /// @brief Checks if a number is in between two other numbers. Markers can be in either order.
@@ -570,3 +573,12 @@ void OnTickVelocity(Entity *entity)
         entity->location.y = DEFAULT_SCREEN_SIZE_Y;
     }
 }
+
+/*
+void List_DestroyEntityOnRemove(void *data)
+{
+    Entity *entity = data;
+    // Entity->onDestroy;
+    // TODO:
+}
+*/
