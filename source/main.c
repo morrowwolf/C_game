@@ -36,6 +36,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 #endif
 
+	// TODO: When we multithread gamestate we can query cores with, probably thread per core minus buffers and window:
+	// https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsysteminfo?redirectedfrom=MSDN
 	CreateThread(NULL, 0, GamestateHandler, NULL, 0, NULL);
 
 	// Freed by the handler
@@ -44,6 +46,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	windowHandlerArgs->iCmdShow = iCmdShow;
 	HANDLE windowThread = CreateThread(NULL, 0, WindowHandler, windowHandlerArgs, 0, NULL);
 
+	// TODO: Main thread should just be WindowHandler probably
 	WaitForSingleObject(windowThread, INFINITE);
 
 	exit(0);
