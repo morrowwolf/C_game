@@ -28,7 +28,7 @@
 #define MAX_FIGHTERS 1
 #define DEFAULT_SCREEN_SIZE_X 1600
 #define DEFAULT_SCREEN_SIZE_Y 900
-#define BUFFER_THREAD_COUNT 2
+#define BUFFER_THREAD_COUNT 1
 
 #define RANDOMIZE(randomVal)                     \
     BCryptGenRandom(NULL,                        \

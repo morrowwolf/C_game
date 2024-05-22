@@ -5,6 +5,14 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 {
     UNREFERENCED_PARAMETER(lpParam);
 
+    // TODO:
+    // SYSTEM_INFO systemInfo;
+    // GetSystemInfo(&systemInfo);
+
+    // TCHAR buffer[32];
+    // _stprintf(buffer, TEXT("%d"), systemInfo.dwNumberOfProcessors);
+    // OutputDebugString(buffer);
+
     HANDLE hTimer;
     LARGE_INTEGER liDueTime;
     liDueTime.QuadPart = -40000LL;
@@ -17,18 +25,21 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
     {
         SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, 0);
 
-        ListElmt *referenceElementEntities = GAMESTATE->entities.head;
-        while (referenceElementEntities != NULL)
+        ListIterator *entitiesIterator;
+        ListIterator_Init(&entitiesIterator, &GAMESTATE->entities, ReadWriteLock_Read);
+        Entity *referenceEntity;
+        while (ListIterator_Next(entitiesIterator, (void **)&referenceEntity))
         {
-            Entity *referenceEntity = referenceElementEntities->data;
-            ListElmt *referenceElementOnTick = referenceEntity->onTick.head;
-            while (referenceElementOnTick != NULL)
+            ListIterator *onTickIterator;
+            ListIterator_Init(&onTickIterator, &referenceEntity->onTick, ReadWriteLock_Read);
+            void (*referenceOnTick)(Entity *);
+            while (ListIterator_Next(onTickIterator, (void **)&referenceOnTick))
             {
-                ((void (*)(Entity *))referenceElementOnTick->data)(referenceEntity);
-                referenceElementOnTick = referenceElementOnTick->next;
+                referenceOnTick(referenceEntity);
             }
-            referenceElementEntities = referenceElementEntities->next;
+            ListIterator_Destroy(onTickIterator);
         }
+        ListIterator_Destroy(entitiesIterator);
 
         if (GAMESTATE->fighters.length < MAX_FIGHTERS)
         {
@@ -50,3 +61,5 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     exit(0);
 }
+
+// DWORD WINAPI GamestateHelper(LPVOID lpParam){}

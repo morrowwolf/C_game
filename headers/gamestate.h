@@ -8,5 +8,6 @@
 #include "entity/fighter.h"
 
 DWORD WINAPI GamestateHandler(LPVOID);
+DWORD WINAPI GamestateHelper(LPVOID);
 
 #endif
