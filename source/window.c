@@ -115,6 +115,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 #endif
         return 0;
 
+    case WM_MOUSEMOVE:
+        RECT clientRect;
+        GetClientRect(hWnd, &clientRect);
+        GAMESTATE->mousePosition.x = GET_X_LPARAM(lParam);
+        GAMESTATE->mousePosition.y = clientRect.bottom - GET_Y_LPARAM(lParam);
+        return 0;
+
     case WM_PAINT:
 
 #ifdef CPU_GRAPHICS

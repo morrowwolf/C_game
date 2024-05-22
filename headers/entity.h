@@ -20,6 +20,10 @@ struct EntityInternal
     double rotationSpeed;
     double radius;
 
+    int lifetime;
+    int activationDelay;
+    int fireDelay;
+
     List baseVertices;           // List of Point
     List rotationOffsetVertices; // List of Point
 

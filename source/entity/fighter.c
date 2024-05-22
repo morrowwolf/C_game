@@ -16,11 +16,14 @@ void SpawnPlayerFighter()
     settingUpEntity->onDestroy = FighterDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
     List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
+    List_Insert(&settingUpEntity->onTick, OnTickReduceFireDelay);
     List_Insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
+    List_Insert(&settingUpEntity->onTick, OnTickKeyFireBullet);
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
     List_Insert(&GAMESTATE->fighters, settingUpEntity);
+    List_Insert(&GAMESTATE->entities, settingUpEntity);
 }
 
 void FighterDestroy(Entity *entity)
@@ -170,3 +173,25 @@ void OnTickKeyAcceleration(Entity *entity)
 #undef MAIN_DRIVE_ACCELERATION
 #undef THRUSTER_ACCELERATION
 #undef ROTATION_ACCELERATION
+
+#define FIGHTER_FIRE_DELAY 5
+void OnTickKeyFireBullet(Entity *entity)
+{
+    if (GAMESTATE->keys[VK_SPACE])
+    {
+        if (entity->fireDelay <= 0)
+        {
+            SpawnFiredBullet(entity);
+            entity->fireDelay = 5;
+        }
+    }
+}
+#undef FIGHTER_FIRE_DELAY
+
+void OnTickReduceFireDelay(Entity *entity)
+{
+    if (entity->fireDelay > 0)
+    {
+        entity->fireDelay -= 1;
+    }
+}

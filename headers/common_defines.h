@@ -13,6 +13,7 @@
 // #define _DEBUG 1
 
 #include <Windows.h>
+#include <windowsx.h>
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -60,6 +61,10 @@ typedef struct
 
     HANDLE keyEvent;
     BYTE keys[256]; // 1 is active, 0 is inactive | https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+
+    BYTE mouseButtons[1]; // TODO
+    Point mousePosition;  // This is screen location not world location
+
 } Gamestate;
 
 Gamestate *GAMESTATE;

@@ -15,7 +15,6 @@ void ZeroAndInitEntity(Entity **entity)
     (*entity)->entityNumber = GAMESTATE->runningEntityID;
     (*entity)->alive = ENTITY_ALIVE;
     GAMESTATE->runningEntityID += 1;
-    List_Insert(&GAMESTATE->entities, *entity);
 }
 
 void EntityDeath(Entity *entity)
@@ -285,12 +284,14 @@ void OnCollisionDeath(Entity *entity, Entity *collidingEntity)
 {
     UNREFERENCED_PARAMETER(collidingEntity);
 
-    ListElmt *referenceElement = entity->onDeath.head;
-    while (referenceElement != NULL)
+    ListIterator *onDeathIterator;
+    ListIterator_Init(&onDeathIterator, &entity->onDeath, ReadWriteLock_Read);
+    void (*onDeath)(Entity *);
+    while (ListIterator_Next(onDeathIterator, (void **)&onDeath))
     {
-        ((void (*)(Entity *))referenceElement->data)(entity);
-        referenceElement = referenceElement->next;
+        onDeath(entity);
     }
+    ListIterator_Destroy(onDeathIterator);
 }
 
 void OnDrawVertexLines(Entity *entity, HDC *hdc)
@@ -544,11 +545,12 @@ void OnTickRotation(Entity *entity)
 
     entity->rotation += entity->rotationSpeed;
 
-    if (entity->rotation < 0.0)
+    while (entity->rotation < 0.0)
     {
         entity->rotation += 2.0 * M_PI;
     }
-    else if (entity->rotation > 2 * M_PI)
+
+    while (entity->rotation > 2 * M_PI)
     {
         entity->rotation -= 2.0 * M_PI;
     }

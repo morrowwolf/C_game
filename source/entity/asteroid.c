@@ -20,6 +20,7 @@ void SpawnAsteroid()
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
     List_Insert(&GAMESTATE->asteroids, settingUpEntity);
+    List_Insert(&GAMESTATE->entities, settingUpEntity);
 }
 
 void AsteroidDestroy(Entity *entity)

@@ -50,6 +50,11 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         Entity *referenceEntity;
         while (ListIterator_Next(entitiesIterator, (void **)(&referenceEntity)))
         {
+            if (referenceEntity->alive == ENTITY_DEAD)
+            {
+                continue;
+            }
+
             ListIterator *onDrawIterator;
             ListIterator_Init(&onDrawIterator, &referenceEntity->onDraw, ReadWriteLock_Read);
             void (*referenceOnDraw)(Entity *, HDC *);
@@ -82,13 +87,22 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         {
             if (((Entity *)(GAMESTATE->fighters.head->data))->colliding)
             {
-                TextOut(bufferDC, 12, 40, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
+                TextOut(bufferDC, 48, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
             }
             else
             {
-                TextOut(bufferDC, 12, 40, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
+                TextOut(bufferDC, 48, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
             }
         }
+
+        formattingRect.right = 100;
+        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 70;
+        formattingRect.left = 48;
+        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 80;
+
+        _stprintf(buffer, TEXT("Mouse: (%d, %d)"), (int)GAMESTATE->mousePosition.x, (int)GAMESTATE->mousePosition.y);
+        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
+
 #endif
         formattingRect.right = DEFAULT_SCREEN_SIZE_X;
         formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 20;
