@@ -13,7 +13,7 @@ void SpawnPlayerFighter()
     SetupRadius(settingUpEntity);
 
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
-    List_Insert(&settingUpEntity->onDeath, OnDeathFighter);
+    settingUpEntity->onDestroy = FighterDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
     List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
     List_Insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
@@ -21,6 +21,15 @@ void SpawnPlayerFighter()
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
     List_Insert(&GAMESTATE->fighters, settingUpEntity);
+}
+
+void FighterDestroy(Entity *entity)
+{
+    ReadWriteLock_GetWritePermission(GAMESTATE->fighters.readWriteLock);
+    List_RemoveElementWithMatchingData(&GAMESTATE->fighters, entity);
+    ReadWriteLock_ReleaseWritePermission(GAMESTATE->fighters.readWriteLock);
+
+    EntityDestroy(entity);
 }
 
 void SetupFighterVertices(Entity *settingUpEntity)
@@ -61,12 +70,6 @@ void SetupFighterVertices(Entity *settingUpEntity)
 
     CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
-}
-
-void OnDeathFighter(Entity *entity)
-{
-    // List_RemoveElementWithMatchingData(&GAMESTATE->fighters, entity);
-    EntityDeath(entity);
 }
 
 #define MAIN_DRIVE_ACCELERATION 0.05

@@ -23,12 +23,13 @@ struct EntityInternal
     List baseVertices;           // List of Point
     List rotationOffsetVertices; // List of Point
 
-    // Other than onDestroy we must promise we never write to
-    // global lists (whether add or remove) in these functions
-    List onCollision; // List of int (*)(Entity *, Entity *)
-    List onDeath;     // List of void (*)(Entity *)
-    List onDraw;      // List of void (*)(Entity *, HDC *)
-    List onTick;      // List of void (*)(Entity *)
+    // Other than onDestroy we must promise we never modify the
+    // Entities global list (whether add or remove) in these functions
+    List onCollision;            // List of int (*)(Entity *, Entity *)
+    List onDeath;                // List of void (*)(Entity *)
+    void (*onDestroy)(Entity *); // onDestroy would release itself, everyone gets one
+    List onDraw;                 // List of void (*)(Entity *, HDC *)
+    List onTick;                 // List of void (*)(Entity *)
 
 #ifdef DEBUG
     int colliding;
@@ -37,6 +38,7 @@ struct EntityInternal
 
 void ZeroAndInitEntity(Entity **);
 void EntityDeath(Entity *);
+void EntityDestroy(Entity *entity);
 
 void CalculateAndSetRotationOffsetVertices(Entity *entity);
 double CalculateXPointRotation(Point *offsetLocation, double rotation);
@@ -53,13 +55,10 @@ void SetupLocationEdgeOfScreen(Entity *);
 
 void SetupRadius(Entity *);
 
-int OnCollisionDeath(Entity *, Entity *);
+void OnCollisionDeath(Entity *, Entity *);
 
 void OnDrawVertexLines(Entity *, HDC *);
 
-#define COLLISION_CONTINUE_SELF_ONLY 2
-#define COLLISION_CONTINUE 1
-#define COLLISION_OVER 0
 void OnTickCheckCollision(Entity *);
 int isInBetween(double primary, double firstMarker, double secondMarker);
 
@@ -67,4 +66,5 @@ void OnTickRotation(Entity *);
 
 void OnTickVelocity(Entity *);
 
+void List_DestroyEntityOnRemove(void *data);
 #endif

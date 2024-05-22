@@ -8,22 +8,41 @@ void ZeroAndInitEntity(Entity **entity)
     List_Init(&(*entity)->rotationOffsetVertices, List_FreeOnRemove);
     List_Init(&(*entity)->onCollision, NULL);
     List_Init(&(*entity)->onDeath, NULL);
+    List_Insert(&(*entity)->onDeath, EntityDeath);
     List_Init(&(*entity)->onDraw, NULL);
     List_Init(&(*entity)->onTick, NULL);
+    (*entity)->onDestroy = EntityDestroy;
     (*entity)->entityNumber = GAMESTATE->runningEntityID;
     (*entity)->alive = ENTITY_ALIVE;
     GAMESTATE->runningEntityID += 1;
     List_Insert(&GAMESTATE->entities, *entity);
 }
 
-// TODO: clear all the lists and remove from global list
-void EntityDestroy();
-
 void EntityDeath(Entity *entity)
 {
+    if (entity->alive == ENTITY_DEAD)
+    {
+        return;
+    }
+
     entity->alive = ENTITY_DEAD;
-    // List_RemoveElementWithMatchingData(&GAMESTATE->entities, entity);
-    // list_insert(&GAMESTATE->deadEntities, entity);
+    ReadWriteLock_GetWritePermission(GAMESTATE->deadEntities.readWriteLock);
+    List_Insert(&GAMESTATE->deadEntities, entity);
+    ReadWriteLock_ReleaseWritePermission(GAMESTATE->deadEntities.readWriteLock);
+}
+
+void EntityDestroy(Entity *entity)
+{
+    ReadWriteLock_GetWritePermission(GAMESTATE->entities.readWriteLock);
+    List_RemoveElementWithMatchingData(&GAMESTATE->entities, entity);
+    ReadWriteLock_ReleaseWritePermission(GAMESTATE->entities.readWriteLock);
+    List_Destroy(&entity->baseVertices);
+    List_Destroy(&entity->rotationOffsetVertices);
+    List_Destroy(&entity->onCollision);
+    List_Destroy(&entity->onDeath);
+    List_Destroy(&entity->onDraw);
+    List_Destroy(&entity->onTick);
+    free(entity);
 }
 
 void CalculateAndSetRotationOffsetVertices(Entity *entity)
@@ -257,14 +276,9 @@ void SetupRadius(Entity *entity)
     entity->radius = largestDistance;
 }
 
-int OnCollisionDeath(Entity *entity, Entity *collidingEntity)
+void OnCollisionDeath(Entity *entity, Entity *collidingEntity)
 {
     UNREFERENCED_PARAMETER(collidingEntity);
-
-    if (!entity->alive)
-    {
-        return COLLISION_CONTINUE;
-    }
 
     ListElmt *referenceElement = entity->onDeath.head;
     while (referenceElement != NULL)
@@ -272,8 +286,6 @@ int OnCollisionDeath(Entity *entity, Entity *collidingEntity)
         ((void (*)(Entity *))referenceElement->data)(entity);
         referenceElement = referenceElement->next;
     }
-
-    return COLLISION_CONTINUE;
 }
 
 void OnDrawVertexLines(Entity *entity, HDC *hdc)
@@ -312,7 +324,7 @@ void OnTickCheckCollision(Entity *entity)
     while (referenceElement != NULL)
     {
         Entity *referenceEntity = referenceElement->data;
-        if (referenceEntity == entity || referenceEntity->alive == ENTITY_DEAD)
+        if (referenceEntity == entity)
         {
             referenceElement = referenceElement->next;
             continue;
@@ -331,7 +343,7 @@ void OnTickCheckCollision(Entity *entity)
 
     if (entitiesPotentialCollision.length < 1)
     {
-        List_Clear(&entitiesPotentialCollision);
+        List_Destroy(&entitiesPotentialCollision);
 
 #ifdef DEBUG
         entity->colliding = FALSE;
@@ -458,8 +470,8 @@ void OnTickCheckCollision(Entity *entity)
 
     if (entitiesColliding.length < 1)
     {
-        List_Clear(&entitiesPotentialCollision);
-        List_Clear(&entitiesColliding);
+        List_Destroy(&entitiesPotentialCollision);
+        List_Destroy(&entitiesColliding);
 
 #ifdef DEBUG
         entity->colliding = FALSE;
@@ -472,42 +484,31 @@ void OnTickCheckCollision(Entity *entity)
     entity->colliding = TRUE;
 #endif
 
-    int collisionReturn = COLLISION_CONTINUE;
-    referenceElement = entity->onCollision.head;
-    while (referenceElement != NULL && collisionReturn != COLLISION_OVER)
+    ListIterator *entitiesCollidingIterator;
+    ListIterator_Init(&entitiesCollidingIterator, &entitiesColliding, ReadWriteLock_Read);
+    Entity *referenceOtherEntity;
+    while (ListIterator_Next(entitiesCollidingIterator, (void **)&referenceOtherEntity))
     {
-        ListElmt *referenceElementOtherEntity = entitiesColliding.head;
-        while (referenceElementOtherEntity != NULL && collisionReturn != COLLISION_OVER)
+        ListIterator *onCollisionIterator;
+        ListIterator_Init(&onCollisionIterator, &entity->onCollision, ReadWriteLock_Read);
+        void (*referenceOnCollision)(Entity *, Entity *);
+        while (ListIterator_Next(onCollisionIterator, (void **)&referenceOnCollision))
         {
-            Entity *otherEntity = referenceElementOtherEntity->data;
-            collisionReturn = ((int (*)(Entity *, Entity *))referenceElement->data)(entity, otherEntity);
-            referenceElementOtherEntity = referenceElementOtherEntity->next;
+            referenceOnCollision(entity, referenceOtherEntity);
         }
-        referenceElement = referenceElement->next;
-    }
+        ListIterator_Destroy(onCollisionIterator);
 
-    if (collisionReturn != COLLISION_CONTINUE)
-    {
-        List_Clear(&entitiesPotentialCollision);
-        List_Clear(&entitiesColliding);
-        return;
-    }
-
-    referenceElement = entity->onCollision.head;
-    while (referenceElement != NULL && collisionReturn != COLLISION_OVER)
-    {
-        ListElmt *referenceElementOtherEntity = entitiesColliding.head;
-        while (referenceElementOtherEntity != NULL && collisionReturn != COLLISION_OVER)
+        ListIterator_Init(&onCollisionIterator, &referenceOtherEntity->onCollision, ReadWriteLock_Read);
+        while (ListIterator_Next(onCollisionIterator, (void **)&referenceOnCollision))
         {
-            Entity *otherEntity = referenceElementOtherEntity->data;
-            collisionReturn = ((int (*)(Entity *, Entity *))referenceElement->data)(entity, otherEntity);
-            referenceElementOtherEntity = referenceElementOtherEntity->next;
+            referenceOnCollision(referenceOtherEntity, entity);
         }
-        referenceElement = referenceElement->next;
+        ListIterator_Destroy(onCollisionIterator);
     }
+    ListIterator_Destroy(entitiesCollidingIterator);
 
-    List_Clear(&entitiesPotentialCollision);
-    List_Clear(&entitiesColliding);
+    List_Destroy(&entitiesPotentialCollision);
+    List_Destroy(&entitiesColliding);
 }
 
 /// @brief Checks if a number is in between two other numbers. Markers can be in either order.
@@ -574,11 +575,8 @@ void OnTickVelocity(Entity *entity)
     }
 }
 
-/*
 void List_DestroyEntityOnRemove(void *data)
 {
     Entity *entity = data;
-    // Entity->onDestroy;
-    // TODO:
+    entity->onDestroy(entity);
 }
-*/

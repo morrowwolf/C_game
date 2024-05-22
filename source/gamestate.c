@@ -21,11 +21,6 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         while (referenceElementEntities != NULL)
         {
             Entity *referenceEntity = referenceElementEntities->data;
-            if (referenceEntity->alive != ENTITY_ALIVE)
-            {
-                referenceElementEntities = referenceElementEntities->next;
-                continue;
-            }
             ListElmt *referenceElementOnTick = referenceEntity->onTick.head;
             while (referenceElementOnTick != NULL)
             {
@@ -48,7 +43,6 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         asteroidSpawnDelayCounter++;
 
         // The following should always be last:
-        // TODO: Change the remove function for deadEntities to use onDestroy
         List_Clear(&GAMESTATE->deadEntities);
 
         WaitForSingleObject(hTimer, INFINITE);

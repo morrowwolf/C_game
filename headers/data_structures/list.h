@@ -7,6 +7,8 @@
 
 typedef struct ListElmt_
 {
+    // Using void* to hold function pointers is apparently undefined behavior
+    // So far it's been working so... if it stops working we'll need to get creative
     void *data;
     struct ListElmt_ *next;
     struct ListElmt_ *prev;
@@ -23,6 +25,7 @@ typedef struct List_
 
 void List_Init(List *list, void (*destroy)(void *data));
 void List_Clear(List *list);
+void List_Destroy(List *list);
 
 int List_Insert(List *list, const void *data);
 int List_InsertAt(List *list, const void *data, int position);

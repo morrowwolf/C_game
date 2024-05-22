@@ -6,10 +6,9 @@
 #include "../entity.h"
 
 void SpawnPlayerFighter();
+void FighterDestroy(Entity *);
 
 void SetupFighterVertices(Entity *);
-
-void OnDeathFighter(Entity *);
 
 void OnTickKeyAcceleration(Entity *);
 

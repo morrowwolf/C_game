@@ -6,5 +6,6 @@
 #include "gamestate.h"
 #include "window.h"
 #include "windowCPUBuffer.h"
+#include "entity.h"
 
 #endif

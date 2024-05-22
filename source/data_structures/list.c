@@ -18,8 +18,20 @@ void List_Clear(List *list)
         List_RemoveElement(list, list->tail);
     }
 
+    ReadWriteLock_ReleaseWritePermission(list->readWriteLock);
+}
+
+void List_Destroy(List *list)
+{
+    ReadWriteLock_GetWritePermission(list->readWriteLock);
+
+    while (list->length > 0)
+    {
+        // NOLINTNEXTLINE
+        List_RemoveElement(list, list->tail);
+    }
+
     ReadWriteLock_Destroy(list->readWriteLock);
-    List_Init(list, NULL);
 }
 
 int List_Insert(List *list, const void *data)

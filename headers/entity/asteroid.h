@@ -6,7 +6,7 @@
 #include "../entity.h"
 
 void SpawnAsteroid();
-void OnDeathAsteroid(Entity *entity);
+void AsteroidDestroy(Entity *);
 
 void SetupAsteroidVertices(Entity *);
 

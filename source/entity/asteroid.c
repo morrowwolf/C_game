@@ -14,20 +14,21 @@ void SpawnAsteroid()
     SetupAsteroidVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
 
-    // List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
-    List_Insert(&settingUpEntity->onDeath, OnDeathAsteroid);
+    settingUpEntity->onDestroy = AsteroidDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    // List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
     List_Insert(&GAMESTATE->asteroids, settingUpEntity);
 }
 
-void OnDeathAsteroid(Entity *entity)
+void AsteroidDestroy(Entity *entity)
 {
+    ReadWriteLock_GetWritePermission(GAMESTATE->asteroids.readWriteLock);
     List_RemoveElementWithMatchingData(&GAMESTATE->asteroids, entity);
-    EntityDeath(entity);
+    ReadWriteLock_ReleaseWritePermission(GAMESTATE->asteroids.readWriteLock);
+
+    EntityDestroy(entity);
 }
 
 #define DEFAULT_AXIS_LENGTH 16

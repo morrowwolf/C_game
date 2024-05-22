@@ -56,10 +56,11 @@ short ListIterator_Next(ListIterator *listIterator, void **data)
     {
         listIterator->currentListElement = listIterator->currentListElement->next;
         listIterator->currentIteration = listIterator->currentIteration + 1;
-        if (listIterator->currentListElement == NULL)
-        {
-            return FALSE;
-        }
+    }
+
+    if (listIterator->currentListElement == NULL)
+    {
+        return FALSE;
     }
 
     (*data) = listIterator->currentListElement->data;

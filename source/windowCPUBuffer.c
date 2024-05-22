@@ -45,25 +45,21 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
 
         FillRect(bufferDC, &rect, GetStockObject(BLACK_BRUSH));
 
-        ListElmt *referenceElementEntities = GAMESTATE->entities.head;
-        while (referenceElementEntities != NULL)
+        ListIterator *entitiesIterator;
+        ListIterator_Init(&entitiesIterator, &GAMESTATE->entities, ReadWriteLock_Read);
+        Entity *referenceEntity;
+        while (ListIterator_Next(entitiesIterator, (void **)(&referenceEntity)))
         {
-            Entity *referenceEntity = referenceElementEntities->data;
-
-            if (referenceEntity->alive != ENTITY_ALIVE)
+            ListIterator *onDrawIterator;
+            ListIterator_Init(&onDrawIterator, &referenceEntity->onDraw, ReadWriteLock_Read);
+            void (*referenceOnDraw)(Entity *, HDC *);
+            while (ListIterator_Next(onDrawIterator, (void **)(&referenceOnDraw)))
             {
-                referenceElementEntities = referenceElementEntities->next;
-                continue;
+                referenceOnDraw(referenceEntity, &bufferDC);
             }
-
-            ListElmt *referenceElementOnDraw = referenceEntity->onDraw.head;
-            while (referenceElementOnDraw != NULL)
-            {
-                ((void (*)(Entity *, HDC *))referenceElementOnDraw->data)(referenceEntity, &bufferDC);
-                referenceElementOnDraw = referenceElementOnDraw->next;
-            }
-            referenceElementEntities = referenceElementEntities->next;
+            ListIterator_Destroy(onDrawIterator);
         }
+        ListIterator_Destroy(entitiesIterator);
 
         TCHAR buffer[32];
 

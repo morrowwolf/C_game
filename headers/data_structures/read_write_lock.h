@@ -2,8 +2,13 @@
 #ifndef READ_WRITE_LOCK_H_
 #define READ_WRITE_LOCK_H_
 
-#include <Windows.h>
+// #define DEBUG_SEMAPHORES 1
 
+#include <Windows.h>
+#ifdef DEBUG_SEMAPHORES
+#include <tchar.h>
+#include <stdio.h>
+#endif
 typedef enum
 {
     ReadWriteLock_Write,
@@ -28,5 +33,24 @@ void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *);
 
 void ReadWriteLock_GetReadPermission(ReadWriteLock *);
 void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *);
+
+#ifdef DEBUG_SEMAPHORES
+typedef LONG NTSTATUS;
+
+typedef NTSTATUS(NTAPI *_NtQuerySemaphore)(
+    HANDLE SemaphoreHandle,
+    DWORD SemaphoreInformationClass,
+    PVOID SemaphoreInformation,
+    ULONG SemaphoreInformationLength,
+    PULONG ReturnLength OPTIONAL);
+
+typedef struct _SEMAPHORE_BASIC_INFORMATION
+{
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+} SEMAPHORE_BASIC_INFORMATION;
+
+void SemaphoreDebugOutput(ReadWriteLock *);
+#endif
 
 #endif

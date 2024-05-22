@@ -8,7 +8,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	GAMESTATE = malloc(sizeof(Gamestate));
 	List_Init(&GAMESTATE->entities, NULL);
-	List_Init(&GAMESTATE->deadEntities, List_FreeOnRemove);
+	List_Init(&GAMESTATE->deadEntities, List_DestroyEntityOnRemove);
 	List_Init(&GAMESTATE->asteroids, NULL);
 	List_Init(&GAMESTATE->fighters, NULL);
 	ZeroMemory(&GAMESTATE->keys, sizeof(GAMESTATE->keys));
