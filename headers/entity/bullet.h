@@ -14,7 +14,6 @@ void OnCollisionKill(Entity *entity, Entity *collidingEntity);
 
 void OnDeathBullet(Entity *entity);
 
-void OnTickBulletActivate(Entity *);
 void OnTickExpire(Entity *entity);
 
 #endif

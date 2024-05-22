@@ -7,7 +7,6 @@ void SpawnFiredBullet(Entity *firingEntity)
 
     ZeroAndInitEntity(&settingUpEntity);
     settingUpEntity->lifetime = 60;
-    settingUpEntity->activationDelay = 5;
 
     SetupBulletLocation(settingUpEntity, firingEntity);
     SetupBulletVelocity(settingUpEntity, firingEntity);
@@ -15,9 +14,9 @@ void SpawnFiredBullet(Entity *firingEntity)
     SetupRadius(settingUpEntity);
 
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
+    List_Insert(&settingUpEntity->onCollision, OnCollisionKill);
     List_Insert(&settingUpEntity->onDeath, OnDeathBullet);
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    List_Insert(&settingUpEntity->onTick, OnTickBulletActivate);
     List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
@@ -26,7 +25,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     List_Insert(&GAMESTATE->entities, settingUpEntity);
 }
 
-#define EXTRA_RADIUS_MULTIPLIER 2
+#define EXTRA_RADIUS_MULTIPLIER 1.5
 void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity)
 {
     settingUpEntity->location.x = firingEntity->location.x + firingEntity->velocity.x + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER) * cos(firingEntity->rotation);
@@ -89,15 +88,6 @@ void OnCollisionKill(Entity *entity, Entity *collidingEntity)
 void OnDeathBullet(Entity *entity)
 {
     EntityDeath(entity);
-}
-
-void OnTickBulletActivate(Entity *entity)
-{
-    entity->activationDelay -= 1;
-    if (entity->activationDelay <= 0)
-    {
-        List_Insert(&entity->onCollision, OnCollisionKill);
-    }
 }
 
 void OnTickExpire(Entity *entity)

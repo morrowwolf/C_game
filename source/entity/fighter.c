@@ -174,7 +174,7 @@ void OnTickKeyAcceleration(Entity *entity)
 #undef THRUSTER_ACCELERATION
 #undef ROTATION_ACCELERATION
 
-#define FIGHTER_FIRE_DELAY 5
+#define FIGHTER_FIRE_DELAY 8
 void OnTickKeyFireBullet(Entity *entity)
 {
     if (GAMESTATE->keys[VK_SPACE])
@@ -182,7 +182,7 @@ void OnTickKeyFireBullet(Entity *entity)
         if (entity->fireDelay <= 0)
         {
             SpawnFiredBullet(entity);
-            entity->fireDelay = 5;
+            entity->fireDelay = FIGHTER_FIRE_DELAY;
         }
     }
 }
