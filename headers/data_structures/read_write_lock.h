@@ -9,6 +9,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #endif
+
 typedef enum
 {
     ReadWriteLock_Write,
