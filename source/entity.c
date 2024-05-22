@@ -20,14 +20,13 @@ void ZeroAndInitEntity(Entity **entity)
 
 void EntityDeath(Entity *entity)
 {
-    // Get early write lock to stop potential double add due to non-atomic "alive" variable
-    ReadWriteLock_GetWritePermission(GAMESTATE->deadEntities.readWriteLock);
     if (entity->alive == ENTITY_DEAD)
     {
         return;
     }
 
     entity->alive = ENTITY_DEAD;
+    ReadWriteLock_GetWritePermission(GAMESTATE->deadEntities.readWriteLock);
     List_Insert(&GAMESTATE->deadEntities, entity);
     ReadWriteLock_ReleaseWritePermission(GAMESTATE->deadEntities.readWriteLock);
 }
