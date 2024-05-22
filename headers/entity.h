@@ -38,13 +38,13 @@ struct EntityInternal
 
 void ZeroAndInitEntity(Entity **);
 void EntityDeath(Entity *);
-void EntityDestroy(Entity *entity);
+void EntityDestroy(Entity *);
 
-void CalculateAndSetRotationOffsetVertices(Entity *entity);
-double CalculateXPointRotation(Point *offsetLocation, double rotation);
-double CalculateYPointRotation(Point *offsetLocation, double rotation);
+void CalculateAndSetRotationOffsetVertices(Entity *);
+double CalculateXPointRotation(Point *, double);
+double CalculateYPointRotation(Point *, double);
 
-void CalculateCentroidAndAlignVertices(Entity *entity);
+void CalculateCentroidAndAlignVertices(Entity *);
 
 void SetupRandomVelocity(Entity *);
 void SetupRandomRotation(Entity *);
@@ -60,11 +60,11 @@ void OnCollisionDeath(Entity *, Entity *);
 void OnDrawVertexLines(Entity *, HDC *);
 
 void OnTickCheckCollision(Entity *);
-int isInBetween(double primary, double firstMarker, double secondMarker);
+int isInBetween(double, double, double);
 
 void OnTickRotation(Entity *);
 
 void OnTickVelocity(Entity *);
 
-void List_DestroyEntityOnRemove(void *data);
+void List_DestroyEntityOnRemove(void *);
 #endif

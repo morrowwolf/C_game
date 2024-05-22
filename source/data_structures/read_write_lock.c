@@ -20,27 +20,7 @@ void ReadWriteLock_Destroy(ReadWriteLock *readWriteLock)
 void ReadWriteLock_GetWritePermission(ReadWriteLock *readWriteLock)
 {
 #ifdef DEBUG_SEMAPHORES
-    _NtQuerySemaphore NtQuerySemaphore;
-    SEMAPHORE_BASIC_INFORMATION BasicInfo;
-    NTSTATUS Status;
-
-    NtQuerySemaphore = (_NtQuerySemaphore)GetProcAddress(GetModuleHandle("ntdll.dll"),
-                                                         "NtQuerySemaphore");
-
-    if (NtQuerySemaphore)
-    {
-        Status = NtQuerySemaphore(readWriteLock->readSemaphore, 0,
-                                  &BasicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), NULL);
-
-        if (Status == ERROR_SUCCESS)
-        {
-            TCHAR buffer[64];
-
-            _stprintf(buffer, TEXT("ID: %08x CurrentCount: %lu\n"), readWriteLock->readSemaphore, BasicInfo.CurrentCount);
-
-            OutputDebugString(buffer);
-        }
-    }
+    SemaphoreDebugOutput(readWriteLock);
 #endif
 
     WaitForSingleObject(readWriteLock->writeSemaphore, INFINITE);

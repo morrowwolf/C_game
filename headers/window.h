@@ -5,7 +5,10 @@
 #include "common_defines.h"
 
 DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow);
+
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+void WndProcHandlePaint(HWND, HDC);
+void HandleNonGameKeys();
 
 typedef struct
 {

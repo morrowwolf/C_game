@@ -188,6 +188,8 @@ void SetupRandomRotation(Entity *settingUpEntity)
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
 }
 
+#define MAX_RANDOM_ROTATION_SPEED 0.05
+#define MIN_RANDOM_ROTATION_SPEED 0.01
 void SetupRandomRotationSpeed(Entity *settingUpEntity)
 {
     double randomDouble;
@@ -196,10 +198,12 @@ void SetupRandomRotationSpeed(Entity *settingUpEntity)
     {
         RANDOMIZE(randomDouble);
 
-        settingUpEntity->rotationSpeed = fmod(randomDouble, 0.1);
+        settingUpEntity->rotationSpeed = fmod(randomDouble, MAX_RANDOM_ROTATION_SPEED);
 
-    } while ((settingUpEntity->rotationSpeed > -0.01 && settingUpEntity->rotationSpeed < 0.01) || isnan(settingUpEntity->rotationSpeed));
+    } while ((settingUpEntity->rotationSpeed > -MIN_RANDOM_ROTATION_SPEED && settingUpEntity->rotationSpeed < MIN_RANDOM_ROTATION_SPEED) || isnan(settingUpEntity->rotationSpeed));
 }
+#undef MIN_RANDOM_ROTATION_SPEED
+#undef MAX_RANDOM_ROTATION_SPEED
 
 void SetupLocationCenterOfScreen(Entity *settingUpEntity)
 {
@@ -207,6 +211,7 @@ void SetupLocationCenterOfScreen(Entity *settingUpEntity)
     settingUpEntity->location.y = DEFAULT_SCREEN_SIZE_Y / 2.0;
 }
 
+#define EXTRA_OFFSCREEN_LOCATION_SPACE 30
 void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
 {
     short deltaX;
@@ -219,7 +224,7 @@ void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
     {
         if (deltaX >= 0)
         {
-            settingUpEntity->location.x = 1;
+            settingUpEntity->location.x = -EXTRA_OFFSCREEN_LOCATION_SPACE;
             settingUpEntity->location.y = abs(deltaY) % DEFAULT_SCREEN_SIZE_Y;
         }
         else
@@ -227,12 +232,12 @@ void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
             if (settingUpEntity->velocity.y >= 0)
             {
                 settingUpEntity->location.x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                settingUpEntity->location.y = 1;
+                settingUpEntity->location.y = -EXTRA_OFFSCREEN_LOCATION_SPACE;
             }
             else
             {
                 settingUpEntity->location.x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                settingUpEntity->location.y = DEFAULT_SCREEN_SIZE_Y - 1;
+                settingUpEntity->location.y = DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
             }
         }
     }
@@ -240,7 +245,7 @@ void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
     {
         if (deltaX <= 0)
         {
-            settingUpEntity->location.x = DEFAULT_SCREEN_SIZE_X - 1;
+            settingUpEntity->location.x = DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
             settingUpEntity->location.y = abs(deltaY) % DEFAULT_SCREEN_SIZE_Y;
         }
         else
@@ -248,12 +253,12 @@ void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
             if (settingUpEntity->velocity.y >= 0)
             {
                 settingUpEntity->location.x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                settingUpEntity->location.y = 1;
+                settingUpEntity->location.y = -EXTRA_OFFSCREEN_LOCATION_SPACE;
             }
             else
             {
                 settingUpEntity->location.x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                settingUpEntity->location.y = DEFAULT_SCREEN_SIZE_Y - 1;
+                settingUpEntity->location.y = DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
             }
         }
     }
@@ -556,24 +561,25 @@ void OnTickVelocity(Entity *entity)
     entity->location.x += entity->velocity.x;
     entity->location.y += entity->velocity.y;
 
-    if (entity->location.x > DEFAULT_SCREEN_SIZE_X)
+    if (entity->location.x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
         entity->location.x = 0.0;
     }
-    else if (entity->location.x < 0.0)
+    else if (entity->location.x < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
         entity->location.x = DEFAULT_SCREEN_SIZE_X;
     }
 
-    if (entity->location.y > DEFAULT_SCREEN_SIZE_Y)
+    if (entity->location.y > DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
         entity->location.y = 0.0;
     }
-    else if (entity->location.y < 0.0)
+    else if (entity->location.y < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
         entity->location.y = DEFAULT_SCREEN_SIZE_Y;
     }
 }
+#undef EXTRA_OFFSCREEN_LOCATION_SPACE
 
 void List_DestroyEntityOnRemove(void *data)
 {

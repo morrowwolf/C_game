@@ -48,11 +48,11 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
 
     SetEvent(SCREEN->windowHandleInitializedEvent);
 
-    HWND hwnd = SCREEN->windowHandle;
+    HWND hWnd = SCREEN->windowHandle;
 
     ShowCursor(FALSE);
-    ShowWindow(hwnd, iCmdShow);
-    UpdateWindow(hwnd);
+    ShowWindow(hWnd, iCmdShow);
+    UpdateWindow(hWnd);
 
     short quit = FALSE;
     short lastMessage = TRUE;
@@ -64,8 +64,8 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                InvalidateRect(hwnd, NULL, FALSE);
-                UpdateWindow(hwnd);
+                InvalidateRect(hWnd, NULL, FALSE);
+                UpdateWindow(hWnd);
                 SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
             }
 
@@ -87,12 +87,8 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
     exit(msg.wParam);
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HDC hdc;
-    PAINTSTRUCT ps;
-    RECT rect;
-
     switch (message)
     {
     case WM_DESTROY:
@@ -104,6 +100,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_KEYDOWN:
         GAMESTATE->keys[wParam] = 1;
+        HandleNonGameKeys();
         return 0;
 
     case WM_KEYUP:
@@ -112,48 +109,73 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_KILLFOCUS:
         ZeroMemory(&GAMESTATE->keys, sizeof(GAMESTATE->keys));
+
+#ifndef DEBUG
+        GAMESTATE->running = GAME_PAUSED;
+#endif
         return 0;
 
     case WM_PAINT:
 
 #ifdef CPU_GRAPHICS
-        hdc = BeginPaint(hwnd, &ps);
+        HDC hdc;
+        PAINTSTRUCT ps;
 
-        GetClientRect(hwnd, &rect);
+        hdc = BeginPaint(hWnd, &ps);
 
-        SetMapMode(hdc, MM_ANISOTROPIC);
-        SetWindowExtEx(hdc, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y, NULL);
-        SetViewportExtEx(hdc, rect.right, -rect.bottom, NULL);
-        SetViewportOrgEx(hdc, 0, rect.bottom, NULL);
+        WndProcHandlePaint(hWnd, hdc);
 
-        int i;
-
-        for (i = 0; i < BUFFER_THREAD_COUNT; i++)
-        {
-            if (WaitForSingleObject(
-                    SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed], 0) == WAIT_OBJECT_0)
-            {
-
-                BitBlt(hdc, 0, 0,
-                       DEFAULT_SCREEN_SIZE_X,
-                       DEFAULT_SCREEN_SIZE_Y,
-                       SCREEN->bufferMemDCs[SCREEN->currentBufferUsed],
-                       0, 0, SRCCOPY);
-
-                ReleaseMutex(SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed]);
-                ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[SCREEN->currentBufferUsed], 1, NULL);
-
-                SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
-                break;
-            }
-
-            SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
-        }
-
-        EndPaint(hwnd, &ps);
+        EndPaint(hWnd, &ps);
         return 0;
 #endif
     }
 
-    return DefWindowProc(hwnd, message, wParam, lParam);
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+void WndProcHandlePaint(HWND hWnd, HDC hdc)
+{
+    RECT clientRect;
+
+    GetClientRect(hWnd, &clientRect);
+
+    SetMapMode(hdc, MM_ANISOTROPIC);
+    SetWindowExtEx(hdc, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y, NULL);
+    SetViewportExtEx(hdc, clientRect.right, -clientRect.bottom, NULL);
+    SetViewportOrgEx(hdc, 0, clientRect.bottom, NULL);
+
+    int i;
+
+    for (i = 0; i < BUFFER_THREAD_COUNT; i++)
+    {
+        if (WaitForSingleObject(
+                SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed], 0) == WAIT_OBJECT_0)
+        {
+
+            BitBlt(hdc, 0, 0,
+                   DEFAULT_SCREEN_SIZE_X,
+                   DEFAULT_SCREEN_SIZE_Y,
+                   SCREEN->bufferMemDCs[SCREEN->currentBufferUsed],
+                   0, 0, SRCCOPY);
+
+            ReleaseMutex(SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed]);
+            ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[SCREEN->currentBufferUsed], 1, NULL);
+
+            SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
+            break;
+        }
+
+        SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
+    }
+}
+
+void HandleNonGameKeys()
+{
+    if (GAMESTATE->keys[VK_ESCAPE])
+    {
+        GAMESTATE->running = (GAMESTATE->running + 1) % 2;
+    }
+
+    SetEvent(GAMESTATE->keyEvent);
+    ResetEvent(GAMESTATE->keyEvent);
 }

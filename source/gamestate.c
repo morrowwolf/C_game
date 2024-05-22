@@ -23,6 +23,11 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     while (TRUE)
     {
+        while (!GAMESTATE->running)
+        {
+            WaitForSingleObject(GAMESTATE->keyEvent, INFINITE);
+        }
+
         SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, 0);
 
         ListIterator *entitiesIterator;

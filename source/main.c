@@ -6,13 +6,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(szCmdLine);
 
-	GAMESTATE = malloc(sizeof(Gamestate));
+	GAMESTATE = calloc(1, sizeof(Gamestate));
 	List_Init(&GAMESTATE->entities, NULL);
 	List_Init(&GAMESTATE->deadEntities, List_DestroyEntityOnRemove);
 	List_Init(&GAMESTATE->asteroids, NULL);
 	List_Init(&GAMESTATE->fighters, NULL);
-	ZeroMemory(&GAMESTATE->keys, sizeof(GAMESTATE->keys));
-	GAMESTATE->runningEntityID = 0;
+	GAMESTATE->running = TRUE;
+	GAMESTATE->keyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 #ifdef CPU_GRAPHICS
 

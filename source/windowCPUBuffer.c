@@ -62,6 +62,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         ListIterator_Destroy(entitiesIterator);
 
         TCHAR buffer[32];
+        RECT formattingRect;
 
 #ifdef DEBUG
         int i;
@@ -89,9 +90,24 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
             }
         }
 #endif
+        formattingRect.right = DEFAULT_SCREEN_SIZE_X;
+        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 20;
+        formattingRect.left = 0;
+        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 30;
 
         _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
-        TextOut(bufferDC, DEFAULT_SCREEN_SIZE_X / 2, DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
+        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, DT_INTERNAL_FLAGS);
+
+        if (!GAMESTATE->running)
+        {
+            formattingRect.right = DEFAULT_SCREEN_SIZE_X;
+            formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 40;
+            formattingRect.left = 0;
+            formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 60;
+
+            _stprintf(buffer, TEXT("Game Paused [ESC]"), GAMESTATE->asteroids.length);
+            DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, DT_INTERNAL_FLAGS);
+        }
 
         GdiFlush();
 
