@@ -11,6 +11,7 @@ typedef struct
     unsigned int currentIteration;
     ReadWriteLock_Type type;
 } ListIterator;
+// TODO: Transfer all ListElmt iterators to use this type instead
 
 void ListIterator_Init(ListIterator **, List *, ReadWriteLock_Type);
 void ListIterator_Destroy(ListIterator *);
