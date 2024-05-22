@@ -4,12 +4,7 @@
 
 #include "common_defines.h"
 
-typedef struct
-{
-    HINSTANCE hInstance;
-    int iCmdShow;
-} WindowHandlerArgs;
-DWORD WINAPI WindowHandler(LPVOID);
+DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 typedef struct

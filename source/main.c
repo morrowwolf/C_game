@@ -40,14 +40,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	// https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsysteminfo?redirectedfrom=MSDN
 	CreateThread(NULL, 0, GamestateHandler, NULL, 0, NULL);
 
-	// Freed by the handler
-	WindowHandlerArgs *windowHandlerArgs = malloc(sizeof(WindowHandlerArgs));
-	windowHandlerArgs->hInstance = hInstance;
-	windowHandlerArgs->iCmdShow = iCmdShow;
-	HANDLE windowThread = CreateThread(NULL, 0, WindowHandler, windowHandlerArgs, 0, NULL);
-
-	// TODO: Main thread should just be WindowHandler probably
-	WaitForSingleObject(windowThread, INFINITE);
+	WindowHandler(hInstance, iCmdShow);
 
 	exit(0);
 }

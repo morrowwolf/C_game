@@ -3,15 +3,8 @@
 
 Screen *SCREEN;
 
-DWORD WINAPI WindowHandler(LPVOID lpParam)
+DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
 {
-    WindowHandlerArgs *windowHandlerArgs = (WindowHandlerArgs *)lpParam;
-
-    HINSTANCE hInstance = windowHandlerArgs->hInstance;
-    int iCmdShow = windowHandlerArgs->iCmdShow;
-
-    free(windowHandlerArgs);
-
     TCHAR szAppName[] = TEXT("C Game");
     WNDCLASS wndclass;
 
