@@ -3,7 +3,7 @@
 
 Screen *SCREEN;
 
-DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
+int WindowHandler(HINSTANCE hInstance, int iCmdShow)
 {
     TCHAR szAppName[] = TEXT("C Game");
     WNDCLASS wndclass;
@@ -54,13 +54,13 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
     ShowWindow(hWnd, iCmdShow);
     UpdateWindow(hWnd);
 
-    short quit = FALSE;
     short lastMessage = TRUE;
     MSG msg;
+    msg.wParam = 1;
 
-    while (!quit)
+    while (!GAMESTATE->exiting)
     {
-        while (!quit && lastMessage)
+        while (!GAMESTATE->exiting && lastMessage)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
@@ -73,7 +73,7 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
             {
                 if (msg.message == WM_QUIT)
                 {
-                    quit = TRUE;
+                    GAMESTATE->exiting = TRUE;
                 }
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
@@ -84,7 +84,7 @@ DWORD WINAPI WindowHandler(HINSTANCE hInstance, int iCmdShow)
         lastMessage = TRUE;
     }
 
-    exit(msg.wParam);
+    return msg.wParam;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

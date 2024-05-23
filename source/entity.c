@@ -369,99 +369,95 @@ void OnTickCheckCollision(Entity *entity)
     ListIterator_Init(&entitiesPotentialCollisionIterator, &entitiesPotentialCollision, ReadWriteLock_Read);
     while (ListIterator_Next(entitiesPotentialCollisionIterator, (void **)&referenceOtherEntity))
     {
-        ListIterator *otherEntityVerticesIterator;
-        ListIterator_Init(&otherEntityVerticesIterator, &referenceOtherEntity->rotationOffsetVertices, ReadWriteLock_Read);
-        Point *referenceOtherEntityVertex;
-        while (ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex))
+
+        ListIterator *entityVerticesIterator;
+        ListIterator_Init(&entityVerticesIterator, &entity->rotationOffsetVertices, ReadWriteLock_Read);
+        Point *referenceEntityVertex;
+        while (ListIterator_Next(entityVerticesIterator, (void **)&referenceEntityVertex))
         {
-            Point otherEntityPointPrimary;
-            otherEntityPointPrimary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
-            otherEntityPointPrimary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
+            Point entityPoint;
+            entityPoint.x = referenceEntityVertex->x + entity->location.x;
+            entityPoint.y = referenceEntityVertex->y + entity->location.y;
 
-            Point otherEntityPointSecondary;
-            if (ListIterator_AtTail(otherEntityVerticesIterator))
+            double otherEntityLocationToEntityPoint = max(fabs(referenceOtherEntity->location.x - entityPoint.x),
+                                                          fabs(referenceOtherEntity->location.y - entityPoint.y));
+
+            if (otherEntityLocationToEntityPoint > referenceOtherEntity->radius)
             {
-                ListIterator_GetHead(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
-                otherEntityPointSecondary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
-                otherEntityPointSecondary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
-            }
-            else
-            {
-                ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
-                otherEntityPointSecondary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
-                otherEntityPointSecondary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
-                ListIterator_Prev(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
+                continue;
             }
 
-            double angleToPointSecondary = atan2(otherEntityPointSecondary.y - otherEntityPointPrimary.y, otherEntityPointSecondary.x - otherEntityPointPrimary.x);
-
-            ListIterator *entityVerticesIterator;
-            ListIterator_Init(&entityVerticesIterator, &entity->rotationOffsetVertices, ReadWriteLock_Read);
-            Point *referenceEntityVertex;
-            while (ListIterator_Next(entityVerticesIterator, (void **)&referenceEntityVertex))
+            ListIterator *otherEntityVerticesIterator;
+            ListIterator_Init(&otherEntityVerticesIterator, &referenceOtherEntity->rotationOffsetVertices, ReadWriteLock_Read);
+            Point *referenceOtherEntityVertex;
+            while (ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex))
             {
-                Point entityPointOne;
-                entityPointOne.x = referenceEntityVertex->x + entity->location.x;
-                entityPointOne.y = referenceEntityVertex->y + entity->location.y;
+                Point otherEntityPointOne;
+                otherEntityPointOne.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+                otherEntityPointOne.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
 
-                Point entityPointTwo;
-                if (ListIterator_AtTail(entityVerticesIterator))
+                Point otherEntityPointTwo;
+                if (ListIterator_AtTail(otherEntityVerticesIterator))
                 {
-                    ListIterator_GetHead(entityVerticesIterator, (void **)&referenceEntityVertex);
-                    entityPointTwo.x = referenceEntityVertex->x + entity->location.x;
-                    entityPointTwo.y = referenceEntityVertex->y + entity->location.y;
+                    ListIterator_GetHead(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
+                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
                 }
                 else
                 {
-                    ListIterator_Next(entityVerticesIterator, (void **)&referenceEntityVertex);
-                    entityPointTwo.x = referenceEntityVertex->x + entity->location.x;
-                    entityPointTwo.y = referenceEntityVertex->y + entity->location.y;
-                    ListIterator_Prev(entityVerticesIterator, (void **)&referenceEntityVertex);
+                    ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
+                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
+                    ListIterator_Prev(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
                 }
 
-                double angleToPointOne = atan2(entityPointOne.y - otherEntityPointPrimary.y, entityPointOne.x - otherEntityPointPrimary.x);
-                double angleToPointTwo = atan2(entityPointTwo.y - otherEntityPointPrimary.y, entityPointTwo.x - otherEntityPointPrimary.x);
+                double diffXOtherEntityLocationAndEntityPoint = referenceOtherEntity->location.x - entityPoint.x;
+                double diffYOtherEntityLocationAndEntityPoint = referenceOtherEntity->location.y - entityPoint.y;
 
-                if ((fabs(angleToPointOne - angleToPointTwo) > M_PI) ? isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo) : !isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
+                double angleToEntityPoint = atan2(diffYOtherEntityLocationAndEntityPoint, diffXOtherEntityLocationAndEntityPoint);
+                double angleToOtherEntityPointOne = atan2(referenceOtherEntity->location.y - otherEntityPointOne.y, referenceOtherEntity->location.x - otherEntityPointOne.x);
+                double angleToOtherEntityPointTwo = atan2(referenceOtherEntity->location.y - otherEntityPointTwo.y, referenceOtherEntity->location.x - otherEntityPointTwo.x);
+
+                if ((fabs(angleToOtherEntityPointOne - angleToOtherEntityPointTwo) > M_PI) ? isInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo) : !isInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo))
                 {
                     continue;
                 }
 
-                double diffX = entityPointOne.x - entityPointTwo.x;
-                double diffY = entityPointOne.y - entityPointTwo.y;
+                double distanceBetweenOtherEntityLocationAndEntityPoint = max(fabs(diffXOtherEntityLocationAndEntityPoint), fabs(diffYOtherEntityLocationAndEntityPoint));
+
+                double otherEntityPointsDiffX = otherEntityPointOne.x - otherEntityPointTwo.x;
+                double otherEntityPointsDiffY = otherEntityPointOne.y - otherEntityPointTwo.y;
 
                 double slopeOfEntityLine;
-                if (diffX == 0.0 || diffY == 0.0)
+                if (otherEntityPointsDiffX == 0.0 || otherEntityPointsDiffY == 0.0)
                 {
                     slopeOfEntityLine = 0.0;
                 }
                 else
                 {
-                    slopeOfEntityLine = diffY / diffX;
+                    slopeOfEntityLine = otherEntityPointsDiffY / otherEntityPointsDiffX;
                 }
 
-                double lineConstant = entityPointOne.y - (slopeOfEntityLine * entityPointOne.x);
+                double lineConstant = otherEntityPointOne.y - (slopeOfEntityLine * otherEntityPointOne.x);
 
-                double numerator = (slopeOfEntityLine * otherEntityPointPrimary.x) + (-1.0 * otherEntityPointPrimary.y) + lineConstant;
+                double numerator = (slopeOfEntityLine * referenceOtherEntity->location.x) + (-1.0 * referenceOtherEntity->location.y) + lineConstant;
 
                 double denominator = sqrt(pow(slopeOfEntityLine, 2.0) + 1.0);
 
-                double distanceFromOtherEntityPointPrimaryToEntityLine = fabs(numerator / denominator);
+                double distanceFromOtherEntityLocationToOtherEntityLine = fabs(numerator / denominator);
 
-                double angleFromOtherEntityPointPrimaryToEntityLine = atan2(-1 * diffX, diffY);
+                double angleFromOtherEntityLocationToOtherEntityLine = atan2(-1 * otherEntityPointsDiffX, otherEntityPointsDiffY);
 
-                double angleDiff = fabs(angleFromOtherEntityPointPrimaryToEntityLine - angleToPointSecondary);
+                double angleDiff = fabs(angleFromOtherEntityLocationToOtherEntityLine - angleToEntityPoint);
 
                 if (angleDiff > M_PI)
                 {
                     angleDiff = (2 * M_PI) - angleDiff;
                 }
 
-                double distanceFromOtherEntityPointPrimaryToEntityLineAtCorrectAngle = fabs(distanceFromOtherEntityPointPrimaryToEntityLine / cos(angleDiff));
+                double distanceFromOtherEntityLocationToOtherEntityLineAtCorrectAngle = fabs(distanceFromOtherEntityLocationToOtherEntityLine / cos(angleDiff));
 
-                double lengthOfOtherEntityLine = sqrt(pow(otherEntityPointSecondary.x - otherEntityPointPrimary.x, 2.0) + pow(otherEntityPointSecondary.y - otherEntityPointPrimary.y, 2.0));
-
-                if (distanceFromOtherEntityPointPrimaryToEntityLineAtCorrectAngle > lengthOfOtherEntityLine)
+                if (distanceFromOtherEntityLocationToOtherEntityLineAtCorrectAngle < distanceBetweenOtherEntityLocationAndEntityPoint)
                 {
                     continue;
                 }
@@ -469,9 +465,9 @@ void OnTickCheckCollision(Entity *entity)
                 List_Insert(&entitiesColliding, referenceOtherEntity);
                 break;
             }
-            ListIterator_Destroy(entityVerticesIterator);
+            ListIterator_Destroy(otherEntityVerticesIterator);
         }
-        ListIterator_Destroy(otherEntityVerticesIterator);
+        ListIterator_Destroy(entityVerticesIterator);
     }
     ListIterator_Destroy(entitiesPotentialCollisionIterator);
 

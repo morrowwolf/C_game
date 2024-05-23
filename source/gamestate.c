@@ -21,9 +21,9 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     unsigned short asteroidSpawnDelayCounter = 0;
 
-    while (TRUE)
+    while (!GAMESTATE->exiting)
     {
-        while (!GAMESTATE->running)
+        while (!GAMESTATE->running && !GAMESTATE->exiting)
         {
             WaitForSingleObject(GAMESTATE->keyEvent, INFINITE);
         }
@@ -64,7 +64,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         WaitForSingleObject(hTimer, INFINITE);
     }
 
-    exit(0);
+    return 0;
 }
 
 // DWORD WINAPI GamestateHelper(LPVOID lpParam){}

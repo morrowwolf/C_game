@@ -10,7 +10,11 @@
 // #define DEBUG 1
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
-// #define _DEBUG 1
+#ifdef DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
 
 #include <Windows.h>
 #include <windowsx.h>
@@ -50,6 +54,8 @@ typedef struct
 
 typedef struct
 {
+    unsigned short exiting;
+
     unsigned long long runningEntityID;
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1

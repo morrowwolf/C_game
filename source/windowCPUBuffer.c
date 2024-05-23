@@ -37,7 +37,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
 
     ReleaseDC(SCREEN->windowHandle, screenDC);
 
-    while (TRUE)
+    while (!GAMESTATE->exiting)
     {
         WaitForSingleObject(SCREEN->bufferDrawingMutexes[id], INFINITE);
 
@@ -132,5 +132,5 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
 
     SelectObject(bufferDC, original);
     DeleteDC(bufferDC);
-    exit(0);
+    return 0;
 }

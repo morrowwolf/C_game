@@ -38,8 +38,8 @@ int List_RemoveElementWithMatchingData(List *list, void *data);
 
 int List_GetElementPosition(List *list, ListElmt *element);
 int List_GetDataPosition(List *list, void *data);
-int List_GetElementAtPosition(List *list, ListElmt **element, int position);
-int List_GetElementWithMatchingData(List *list, ListElmt **element, void *data);
+short List_GetElementAtPosition(List *, ListElmt **, unsigned int);
+short List_GetElementWithMatchingData(List *, ListElmt **, void *);
 
 void List_FreeOnRemove(void *data);
 

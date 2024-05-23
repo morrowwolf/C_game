@@ -49,15 +49,15 @@ int List_InsertAt(List *list, const void *data, int position)
     ListElmt *referenceElement;
     if (!List_GetElementAtPosition(list, &referenceElement, position))
     {
-        return 0;
+        return FALSE;
     }
 
     if (!List_InsertNext(list, referenceElement, data))
     {
-        return 0;
+        return FALSE;
     }
 
-    return 1;
+    return TRUE;
 }
 
 int List_InsertNext(List *list, ListElmt *element, const void *data)
@@ -66,12 +66,12 @@ int List_InsertNext(List *list, ListElmt *element, const void *data)
 
     if (element == NULL && list->length != 0)
     {
-        return 0;
+        return FALSE;
     }
 
     if ((newElement = malloc(sizeof(ListElmt))) == NULL)
     {
-        return 0;
+        return FALSE;
     }
 
     newElement->data = (void *)data;
@@ -101,7 +101,7 @@ int List_InsertNext(List *list, ListElmt *element, const void *data)
     }
 
     list->length++;
-    return 1;
+    return TRUE;
 }
 
 int List_InsertPrevious(List *list, ListElmt *element, const void *data)
@@ -110,12 +110,12 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data)
 
     if (element == NULL && list->length != 0)
     {
-        return 0;
+        return FALSE;
     }
 
     if ((newElement = malloc(sizeof(ListElmt))) == NULL)
     {
-        return 0;
+        return FALSE;
     }
 
     newElement->data = (void *)data;
@@ -146,7 +146,7 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data)
 
     list->length++;
 
-    return 1;
+    return TRUE;
 }
 
 int List_RemovePosition(List *list, int position)
@@ -154,15 +154,15 @@ int List_RemovePosition(List *list, int position)
     ListElmt *referenceElement;
     if (!List_GetElementAtPosition(list, &referenceElement, position))
     {
-        return 0;
+        return FALSE;
     }
 
     if (!List_RemoveElement(list, referenceElement))
     {
-        return 0;
+        return FALSE;
     }
 
-    return 1;
+    return TRUE;
 }
 
 /// @brief Removes the element from the list.
@@ -175,7 +175,7 @@ int List_RemoveElement(List *list, ListElmt *element)
 {
     if (element == NULL || list->length == 0)
     {
-        return 0;
+        return FALSE;
     }
 
     if (element == list->head)
@@ -213,7 +213,7 @@ int List_RemoveElement(List *list, ListElmt *element)
     free(element);
     list->length--;
 
-    return 1;
+    return TRUE;
 }
 
 /// @brief Attempts to remove an element from the passed list based on data pointer comparison.
@@ -243,13 +243,13 @@ int List_GetElementPosition(List *list, ListElmt *element)
         return -1;
     }
 
-    int i;
+    unsigned int i;
     ListElmt *referenceElement = list->head;
     for (i = 0; i < list->length; i++)
     {
         if (element == referenceElement)
         {
-            return i;
+            return (int)i;
         }
     }
 
@@ -268,28 +268,28 @@ int List_GetDataPosition(List *list, void *data)
         return -1;
     }
 
-    int i;
+    unsigned int i;
     ListElmt *referenceElement = list->head;
     for (i = 0; i < list->length; i++)
     {
         if (data == referenceElement->data)
         {
-            return i;
+            return (int)i;
         }
     }
 
     return -1;
 }
 
-int List_GetElementAtPosition(List *list, ListElmt **element, int position)
+short List_GetElementAtPosition(List *list, ListElmt **element, unsigned int position)
 {
     if (position > list->length)
     {
-        return 0;
+        return FALSE;
     }
 
     ListElmt *referenceElement = list->head;
-    int i;
+    unsigned int i;
     for (i = 0; i < position; i++)
     {
         referenceElement = referenceElement->next;
@@ -297,7 +297,7 @@ int List_GetElementAtPosition(List *list, ListElmt **element, int position)
 
     *element = referenceElement;
 
-    return 1;
+    return TRUE;
 }
 
 /// @brief Cycles through the elements in the list and compares pointer value of data argument to the element's data variable.
@@ -305,7 +305,7 @@ int List_GetElementAtPosition(List *list, ListElmt **element, int position)
 /// @param element Reference to an element pointer that will be assigned to if matching data found.
 /// @param data The data we look for in the list.
 /// @return Returns 0 if not found, 1 if found data.
-int List_GetElementWithMatchingData(List *list, ListElmt **element, void *data)
+short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data)
 {
 
     ListElmt *referenceElement = list->head;
@@ -316,12 +316,12 @@ int List_GetElementWithMatchingData(List *list, ListElmt **element, void *data)
 
     if (referenceElement == NULL)
     {
-        return 0;
+        return FALSE;
     }
 
     *element = referenceElement;
 
-    return 1;
+    return TRUE;
 }
 
 void List_FreeOnRemove(void *data)
