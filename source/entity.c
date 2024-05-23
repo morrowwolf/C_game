@@ -102,8 +102,8 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
         return;
     }
 
-    int i;
-    int j;
+    unsigned int i;
+    unsigned int j;
     double tempArea = 0.0;
     double tempX = 0.0;
     double tempY = 0.0;
@@ -318,7 +318,7 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
 
 #ifdef DEBUG
     TCHAR buffer[16];
-    _stprintf(buffer, TEXT("%d"), entity->entityNumber);
+    _stprintf(buffer, TEXT("%d"), (int)entity->entityNumber);
     // The text offset for this font is wonky so
     // location is more accurate when slightly higher and left
     TextOut(*hdc, entity->location.x - 3, entity->location.y + 4, buffer, _tcslen(buffer));
@@ -330,26 +330,26 @@ void OnTickCheckCollision(Entity *entity)
     List entitiesPotentialCollision;
     List_Init(&entitiesPotentialCollision, NULL);
 
-    ListElmt *referenceElement = GAMESTATE->entities.head;
-    while (referenceElement != NULL)
+    ListIterator *entitiesIterator;
+    ListIterator_Init(&entitiesIterator, &GAMESTATE->entities, ReadWriteLock_Read);
+    Entity *referenceOtherEntity;
+    while (ListIterator_Next(entitiesIterator, (void **)&referenceOtherEntity))
     {
-        Entity *referenceEntity = referenceElement->data;
-        if (referenceEntity == entity)
+        if (referenceOtherEntity == entity)
         {
-            referenceElement = referenceElement->next;
             continue;
         }
         else
         {
-            double referenceEntityDistance = max(fabs(referenceEntity->location.x - entity->location.x),
-                                                 fabs(referenceEntity->location.y - entity->location.y));
-            if (referenceEntityDistance < (entity->radius + referenceEntity->radius))
+            double referenceOtherEntityDistance = max(fabs(referenceOtherEntity->location.x - entity->location.x),
+                                                      fabs(referenceOtherEntity->location.y - entity->location.y));
+            if (referenceOtherEntityDistance < (entity->radius + referenceOtherEntity->radius))
             {
-                List_Insert(&entitiesPotentialCollision, referenceEntity);
+                List_Insert(&entitiesPotentialCollision, referenceOtherEntity);
             }
         }
-        referenceElement = referenceElement->next;
     }
+    ListIterator_Destroy(entitiesIterator);
 
     if (entitiesPotentialCollision.length < 1)
     {
@@ -365,67 +365,66 @@ void OnTickCheckCollision(Entity *entity)
     List entitiesColliding;
     List_Init(&entitiesColliding, NULL);
 
-    referenceElement = entitiesPotentialCollision.head;
-    while (referenceElement != NULL)
+    ListIterator *entitiesPotentialCollisionIterator;
+    ListIterator_Init(&entitiesPotentialCollisionIterator, &entitiesPotentialCollision, ReadWriteLock_Read);
+    while (ListIterator_Next(entitiesPotentialCollisionIterator, (void **)&referenceOtherEntity))
     {
-        Entity *referenceEntity = referenceElement->data;
-
-        ListElmt *referenceElementVertexOtherEntity = referenceEntity->rotationOffsetVertices.head;
-        while (referenceElementVertexOtherEntity != NULL)
+        ListIterator *otherEntityVerticesIterator;
+        ListIterator_Init(&otherEntityVerticesIterator, &referenceOtherEntity->rotationOffsetVertices, ReadWriteLock_Read);
+        Point *referenceOtherEntityVertex;
+        while (ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex))
         {
             Point otherEntityPointPrimary;
-            otherEntityPointPrimary.x = ((Point *)referenceElementVertexOtherEntity->data)->x + referenceEntity->location.x;
-            otherEntityPointPrimary.y = ((Point *)referenceElementVertexOtherEntity->data)->y + referenceEntity->location.y;
+            otherEntityPointPrimary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+            otherEntityPointPrimary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
+
             Point otherEntityPointSecondary;
-            if (referenceElementVertexOtherEntity->next == NULL)
+            if (ListIterator_AtTail(otherEntityVerticesIterator))
             {
-                otherEntityPointSecondary.x = ((Point *)referenceEntity->rotationOffsetVertices.head->data)->x + referenceEntity->location.x;
-                otherEntityPointSecondary.y = ((Point *)referenceEntity->rotationOffsetVertices.head->data)->y + referenceEntity->location.y;
+                ListIterator_GetHead(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
+                otherEntityPointSecondary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+                otherEntityPointSecondary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
             }
             else
             {
-                otherEntityPointSecondary.x = ((Point *)referenceElementVertexOtherEntity->next->data)->x + referenceEntity->location.x;
-                otherEntityPointSecondary.y = ((Point *)referenceElementVertexOtherEntity->next->data)->y + referenceEntity->location.y;
+                ListIterator_Next(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
+                otherEntityPointSecondary.x = referenceOtherEntityVertex->x + referenceOtherEntity->location.x;
+                otherEntityPointSecondary.y = referenceOtherEntityVertex->y + referenceOtherEntity->location.y;
+                ListIterator_Prev(otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
             }
 
             double angleToPointSecondary = atan2(otherEntityPointSecondary.y - otherEntityPointPrimary.y, otherEntityPointSecondary.x - otherEntityPointPrimary.x);
 
-            ListElmt *referenceElementVertexEntity = entity->rotationOffsetVertices.head;
-            while (referenceElementVertexEntity != NULL)
+            ListIterator *entityVerticesIterator;
+            ListIterator_Init(&entityVerticesIterator, &entity->rotationOffsetVertices, ReadWriteLock_Read);
+            Point *referenceEntityVertex;
+            while (ListIterator_Next(entityVerticesIterator, (void **)&referenceEntityVertex))
             {
                 Point entityPointOne;
-                entityPointOne.x = ((Point *)referenceElementVertexEntity->data)->x + entity->location.x;
-                entityPointOne.y = ((Point *)referenceElementVertexEntity->data)->y + entity->location.y;
+                entityPointOne.x = referenceEntityVertex->x + entity->location.x;
+                entityPointOne.y = referenceEntityVertex->y + entity->location.y;
+
                 Point entityPointTwo;
-                if (referenceElementVertexEntity->next == NULL)
+                if (ListIterator_AtTail(entityVerticesIterator))
                 {
-                    entityPointTwo.x = ((Point *)entity->rotationOffsetVertices.head->data)->x + entity->location.x;
-                    entityPointTwo.y = ((Point *)entity->rotationOffsetVertices.head->data)->y + entity->location.y;
+                    ListIterator_GetHead(entityVerticesIterator, (void **)&referenceEntityVertex);
+                    entityPointTwo.x = referenceEntityVertex->x + entity->location.x;
+                    entityPointTwo.y = referenceEntityVertex->y + entity->location.y;
                 }
                 else
                 {
-                    entityPointTwo.x = ((Point *)referenceElementVertexEntity->next->data)->x + entity->location.x;
-                    entityPointTwo.y = ((Point *)referenceElementVertexEntity->next->data)->y + entity->location.y;
+                    ListIterator_Next(entityVerticesIterator, (void **)&referenceEntityVertex);
+                    entityPointTwo.x = referenceEntityVertex->x + entity->location.x;
+                    entityPointTwo.y = referenceEntityVertex->y + entity->location.y;
+                    ListIterator_Prev(entityVerticesIterator, (void **)&referenceEntityVertex);
                 }
 
                 double angleToPointOne = atan2(entityPointOne.y - otherEntityPointPrimary.y, entityPointOne.x - otherEntityPointPrimary.x);
                 double angleToPointTwo = atan2(entityPointTwo.y - otherEntityPointPrimary.y, entityPointTwo.x - otherEntityPointPrimary.x);
 
-                if (fabs(angleToPointOne - angleToPointTwo) > M_PI)
+                if ((fabs(angleToPointOne - angleToPointTwo) > M_PI) ? isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo) : !isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
                 {
-                    if (isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
-                    {
-                        referenceElementVertexEntity = referenceElementVertexEntity->next;
-                        continue;
-                    }
-                }
-                else
-                {
-                    if (!isInBetween(angleToPointSecondary, angleToPointOne, angleToPointTwo))
-                    {
-                        referenceElementVertexEntity = referenceElementVertexEntity->next;
-                        continue;
-                    }
+                    continue;
                 }
 
                 double diffX = entityPointOne.x - entityPointTwo.x;
@@ -464,19 +463,17 @@ void OnTickCheckCollision(Entity *entity)
 
                 if (distanceFromOtherEntityPointPrimaryToEntityLineAtCorrectAngle > lengthOfOtherEntityLine)
                 {
-                    referenceElementVertexEntity = referenceElementVertexEntity->next;
                     continue;
                 }
 
-                List_Insert(&entitiesColliding, referenceEntity);
+                List_Insert(&entitiesColliding, referenceOtherEntity);
                 break;
             }
-
-            referenceElementVertexOtherEntity = referenceElementVertexOtherEntity->next;
+            ListIterator_Destroy(entityVerticesIterator);
         }
-
-        referenceElement = referenceElement->next;
+        ListIterator_Destroy(otherEntityVerticesIterator);
     }
+    ListIterator_Destroy(entitiesPotentialCollisionIterator);
 
     if (entitiesColliding.length < 1)
     {
@@ -496,7 +493,6 @@ void OnTickCheckCollision(Entity *entity)
 
     ListIterator *entitiesCollidingIterator;
     ListIterator_Init(&entitiesCollidingIterator, &entitiesColliding, ReadWriteLock_Read);
-    Entity *referenceOtherEntity;
     while (ListIterator_Next(entitiesCollidingIterator, (void **)&referenceOtherEntity))
     {
         ListIterator *onCollisionIterator;

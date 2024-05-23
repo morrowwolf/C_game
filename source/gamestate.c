@@ -19,7 +19,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 
-    short asteroidSpawnDelayCounter = 0;
+    unsigned short asteroidSpawnDelayCounter = 0;
 
     while (TRUE)
     {

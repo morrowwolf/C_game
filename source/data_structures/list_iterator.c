@@ -89,3 +89,33 @@ short ListIterator_Prev(ListIterator *listIterator, void **data)
 
     return TRUE;
 }
+
+void ListIterator_GetHead(ListIterator *listIterator, void **data)
+{
+    (*data) = listIterator->listToIterate->head->data;
+}
+
+void ListIterator_GetTail(ListIterator *listIterator, void **data)
+{
+    (*data) = listIterator->listToIterate->tail->data;
+}
+
+short ListIterator_AtHead(ListIterator *listIterator)
+{
+    if (listIterator->currentIteration == 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+short ListIterator_AtTail(ListIterator *listIterator)
+{
+    if (listIterator->currentIteration == listIterator->listToIterate->length - 1)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}

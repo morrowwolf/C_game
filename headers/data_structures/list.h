@@ -16,7 +16,7 @@ typedef struct ListElmt_
 
 typedef struct List_
 {
-    int length;
+    unsigned int length;
     void (*destroy)(void *data);
     ListElmt *head;
     ListElmt *tail;

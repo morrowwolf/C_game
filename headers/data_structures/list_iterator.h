@@ -16,7 +16,13 @@ typedef struct
 void ListIterator_Init(ListIterator **, List *, ReadWriteLock_Type);
 void ListIterator_Destroy(ListIterator *);
 
-short ListIterator_Next(ListIterator *listIterator, void **data);
-short ListIterator_Prev(ListIterator *listIterator, void **data);
+short ListIterator_Next(ListIterator *, void **);
+short ListIterator_Prev(ListIterator *, void **);
+
+void ListIterator_GetHead(ListIterator *, void **);
+void ListIterator_GetTail(ListIterator *, void **);
+
+short ListIterator_AtHead(ListIterator *);
+short ListIterator_AtTail(ListIterator *);
 
 #endif
