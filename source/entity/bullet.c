@@ -25,11 +25,11 @@ void SpawnFiredBullet(Entity *firingEntity)
     List_Insert(&GAMESTATE->entities, settingUpEntity);
 }
 
-#define EXTRA_RADIUS_MULTIPLIER 1.5
+#define EXTRA_RADIUS_MULTIPLIER 1.8
 void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity)
 {
-    settingUpEntity->location.x = firingEntity->location.x + firingEntity->velocity.x + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER) * cos(firingEntity->rotation);
-    settingUpEntity->location.y = firingEntity->location.y + firingEntity->velocity.y + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER) * sin(firingEntity->rotation);
+    settingUpEntity->location.x = firingEntity->location.x + (fabs(firingEntity->velocity.x) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * cos(firingEntity->rotation);
+    settingUpEntity->location.y = firingEntity->location.y + (fabs(firingEntity->velocity.y) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
 }
 #undef EXTRA_RADIUS_MULTIPLIER
 
@@ -44,26 +44,26 @@ void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity)
 void SetupBulletVertices(Entity *settingUpEntity)
 {
     Point *vertex = malloc(sizeof(Point));
-    vertex->x = 2;
-    vertex->y = 0;
+    vertex->x = 1;
+    vertex->y = 1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
     vertex = malloc(sizeof(Point));
-    vertex->x = 0;
-    vertex->y = 2;
+    vertex->x = -1;
+    vertex->y = 1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
     vertex = malloc(sizeof(Point));
-    vertex->x = -2;
-    vertex->y = 0;
+    vertex->x = -1;
+    vertex->y = -1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
     vertex = malloc(sizeof(Point));
-    vertex->x = 0;
-    vertex->y = -2;
+    vertex->x = 1;
+    vertex->y = -1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
