@@ -151,6 +151,8 @@ void CalculateCentroidAndAlignVertices(Entity *entity)
     }
 }
 
+#define MAX_RANDOM_VELOCITY 2.0
+#define MIN_RANDOM_VELOCITY 0.1
 void SetupRandomVelocity(Entity *settingUpEntity)
 {
     double randomDouble;
@@ -159,18 +161,20 @@ void SetupRandomVelocity(Entity *settingUpEntity)
     {
         RANDOMIZE(randomDouble);
 
-        settingUpEntity->velocity.x = fmod(randomDouble, 2.0);
+        settingUpEntity->velocity.x = fmod(randomDouble, MAX_RANDOM_VELOCITY);
 
-    } while ((settingUpEntity->velocity.x > -0.1 && settingUpEntity->velocity.x < 0.1) || isnan(settingUpEntity->velocity.x));
+    } while ((settingUpEntity->velocity.x > -MIN_RANDOM_VELOCITY && settingUpEntity->velocity.x < MIN_RANDOM_VELOCITY) || isnan(settingUpEntity->velocity.x));
 
     do
     {
         RANDOMIZE(randomDouble);
 
-        settingUpEntity->velocity.y = fmod(randomDouble, 2.0);
+        settingUpEntity->velocity.y = fmod(randomDouble, MAX_RANDOM_VELOCITY);
 
-    } while ((settingUpEntity->velocity.y > -0.1 && settingUpEntity->velocity.y < 0.1) || isnan(settingUpEntity->velocity.y));
+    } while ((settingUpEntity->velocity.y > -MIN_RANDOM_VELOCITY && settingUpEntity->velocity.y < MIN_RANDOM_VELOCITY) || isnan(settingUpEntity->velocity.y));
 }
+#undef MIN_RANDOM_VELOCITY
+#undef MAX_RANDOM_VELOCITY
 
 void SetupRandomRotation(Entity *settingUpEntity)
 {
