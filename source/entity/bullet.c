@@ -6,7 +6,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     Entity *settingUpEntity;
 
     ZeroAndInitEntity(&settingUpEntity);
-    settingUpEntity->lifetime = 60;
+    settingUpEntity->lifetime = 90;
 
     SetupBulletLocation(settingUpEntity, firingEntity);
     SetupBulletVelocity(settingUpEntity, firingEntity);

@@ -8,7 +8,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow);
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void WndProcHandlePaint(HWND, HDC);
-void HandleNonGameKeys();
+void HandleNonGameKeys(UINT_PTR);
 
 typedef struct
 {

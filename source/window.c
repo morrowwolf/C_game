@@ -100,7 +100,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_KEYDOWN:
         GAMESTATE->keys[wParam] = 1;
-        HandleNonGameKeys();
+        HandleNonGameKeys(wParam);
         return 0;
 
     case WM_KEYUP:
@@ -176,9 +176,9 @@ void WndProcHandlePaint(HWND hWnd, HDC hdc)
     }
 }
 
-void HandleNonGameKeys()
+void HandleNonGameKeys(UINT_PTR keyCode)
 {
-    if (GAMESTATE->keys[VK_ESCAPE])
+    if (keyCode == VK_ESCAPE)
     {
         GAMESTATE->running = (GAMESTATE->running + 1) % 2;
     }
