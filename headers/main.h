@@ -7,5 +7,6 @@
 #include "window.h"
 #include "windowCPUBuffer.h"
 #include "entity.h"
+#include "tasks.h"
 
 #endif
