@@ -78,6 +78,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	WindowHandler(hInstance, iCmdShow);
 
+	SetEvent(GAMESTATE->keyEvent);
+
 	ListIterator tasksQueuedEventsIterator;
 	ListIterator_Init(&tasksQueuedEventsIterator, &TASKSTATE->tasksQueuedSyncEvents);
 	HANDLE tasksQueuedSyncEvent;
@@ -148,6 +150,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	ReadWriteLock_Destroy(&GAMESTATE->deadEntities);
 	ReadWriteLock_Destroy(&GAMESTATE->asteroids);
 	ReadWriteLock_Destroy(&GAMESTATE->fighters);
+
+	CloseHandle(GAMESTATE->keyEvent);
 
 	free(GAMESTATE);
 
