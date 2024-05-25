@@ -16,6 +16,7 @@ void SpawnAsteroid()
 
     settingUpEntity->onDestroy = AsteroidDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
