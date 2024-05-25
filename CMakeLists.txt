@@ -5,7 +5,9 @@ include(CTest)
 enable_testing()
 
 #debug stuff
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi")
+#set ASAN_SAVE_DUMPS=”MyFileName.dmpx” https://devblogs.microsoft.com/cppblog/asan-for-windows-x64-and-debug-build-support/
+
 
 set(INCLUDED_FILES  source/main.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)

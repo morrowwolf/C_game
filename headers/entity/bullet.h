@@ -7,6 +7,7 @@
 void SpawnFiredBullet(Entity *firingEntity);
 
 void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity);
+void SetupBulletRotation(Entity *settingUpEntity, Entity *firingEntity);
 void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity);
 void SetupBulletVertices(Entity *settingUpEntity);
 

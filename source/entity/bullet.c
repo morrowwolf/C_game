@@ -9,6 +9,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     settingUpEntity->lifetime = 90;
 
     SetupBulletLocation(settingUpEntity, firingEntity);
+    SetupBulletRotation(settingUpEntity, firingEntity);
     SetupBulletVelocity(settingUpEntity, firingEntity);
     SetupBulletVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
@@ -32,6 +33,11 @@ void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity)
     settingUpEntity->location.y = firingEntity->location.y + (fabs(firingEntity->velocity.y) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
 }
 #undef EXTRA_RADIUS_MULTIPLIER
+
+void SetupBulletRotation(Entity *settingUpEntity, Entity *firingEntity)
+{
+    settingUpEntity->rotation = firingEntity->rotation;
+}
 
 #define BULLET_SPEED 5
 void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity)
