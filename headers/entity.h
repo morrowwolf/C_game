@@ -14,7 +14,7 @@ struct EntityInternal
 #define ENTITY_ALIVE 1
 #define ENTITY_DEAD 0
     short alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead
-    Point location;
+    RWL_Point location;
     Vector velocity;
     double rotation;
     double rotationSpeed;
@@ -24,11 +24,9 @@ struct EntityInternal
     int activationDelay;
     int fireDelay;
 
-    List baseVertices;           // List of Point
-    List rotationOffsetVertices; // List of Point
+    List baseVertices;               // List of Point
+    RWL_List rotationOffsetVertices; // List of Point
 
-    // Other than onDestroy we must promise we never modify the
-    // Entities global list (whether add or remove) in these functions
     List onCollision;            // List of int (*)(Entity *, Entity *)
     List onDeath;                // List of void (*)(Entity *)
     void (*onDestroy)(Entity *); // onDestroy would release itself, everyone gets one

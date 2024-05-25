@@ -54,16 +54,18 @@ typedef struct
 
 typedef struct
 {
-    unsigned short exiting;
+    unsigned short exiting; // If the overall process is ending
+
+    RWL_List taskQueue; // list of Task
 
     unsigned long long runningEntityID;
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1
     unsigned short running; // If the gamestate should be processing
-    List entities;          // list of Entity
-    List deadEntities;      // list of Entity, holds memory references to free at end of gamestate cycle
-    List asteroids;         // list of Entity
-    List fighters;          // list of Entity
+    RWL_List entities;      // list of Entity
+    RWL_List deadEntities;  // list of Entity, holds memory references to free at end of gamestate cycle
+    RWL_List asteroids;     // list of Entity
+    RWL_List fighters;      // list of Entity
 
     HANDLE keyEvent;
     BYTE keys[256]; // 1 is active, 0 is inactive | https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
@@ -74,5 +76,14 @@ typedef struct
 } Gamestate;
 
 Gamestate *GAMESTATE;
+
+typedef struct
+{
+    RWL_List taskQueue;
+    List tasksCompleteSyncEvents;
+    List tasksQueuedSyncEvents;
+} TaskState;
+
+TaskState *TASKSTATE;
 
 #endif

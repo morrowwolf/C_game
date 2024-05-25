@@ -1,48 +1,11 @@
 
 #include "../../headers/data_structures/list_iterator.h"
 
-void ListIterator_Init(ListIterator **listIterator, List *listToIterate, ReadWriteLock_Type type)
+void ListIterator_Init(ListIterator *listIterator, List *listToIterate)
 {
+    ZeroMemory(listIterator, sizeof(ListIterator));
 
-    *listIterator = malloc(sizeof(ListIterator));
-    ZeroMemory(*listIterator, sizeof(ListIterator));
-
-    (*listIterator)->listToIterate = listToIterate;
-    (*listIterator)->type = type;
-
-    switch (type)
-    {
-    case ReadWriteLock_Write:
-        ReadWriteLock_GetWritePermission(listToIterate->readWriteLock);
-        break;
-
-    case ReadWriteLock_Read:
-        ReadWriteLock_GetReadPermission(listToIterate->readWriteLock);
-        break;
-
-    default:
-        abort();
-        break;
-    }
-}
-
-void ListIterator_Destroy(ListIterator *listIterator)
-{
-    switch (listIterator->type)
-    {
-    case ReadWriteLock_Write:
-        ReadWriteLock_ReleaseWritePermission(listIterator->listToIterate->readWriteLock);
-        break;
-
-    case ReadWriteLock_Read:
-        ReadWriteLock_ReleaseReadPermission(listIterator->listToIterate->readWriteLock);
-        break;
-
-    default:
-        abort();
-        break;
-    }
-    free(listIterator);
+    listIterator->listToIterate = listToIterate;
 }
 
 short ListIterator_Next(ListIterator *listIterator, void **data)

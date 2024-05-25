@@ -10,12 +10,6 @@
 #include <stdio.h>
 #endif
 
-typedef enum
-{
-    ReadWriteLock_Write,
-    ReadWriteLock_Read
-} ReadWriteLock_Type;
-
 typedef struct
 {
 #define MAX_WRITERS 1
@@ -24,16 +18,20 @@ typedef struct
 #define MAX_READERS 20
     HANDLE readSemaphore;
 
+    void *protectedData;
 } ReadWriteLock;
 
-void ReadWriteLock_Init(ReadWriteLock **);
+typedef ReadWriteLock RWL_List;
+typedef ReadWriteLock RWL_Point;
+
+void ReadWriteLock_Init(ReadWriteLock *, void *);
 void ReadWriteLock_Destroy(ReadWriteLock *);
 
-void ReadWriteLock_GetWritePermission(ReadWriteLock *);
-void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *);
+void ReadWriteLock_GetWritePermission(ReadWriteLock *, void **);
+void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *, void **);
 
-void ReadWriteLock_GetReadPermission(ReadWriteLock *);
-void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *);
+void ReadWriteLock_GetReadPermission(ReadWriteLock *, void **);
+void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *, void **);
 
 #ifdef DEBUG_SEMAPHORES
 typedef LONG NTSTATUS;

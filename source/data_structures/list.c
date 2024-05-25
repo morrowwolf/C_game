@@ -5,33 +5,15 @@ void List_Init(List *list, void (*destroy)(void *data))
 {
     ZeroMemory(list, sizeof(List));
     list->destroy = destroy;
-    ReadWriteLock_Init(&list->readWriteLock);
 }
 
 void List_Clear(List *list)
 {
-    ReadWriteLock_GetWritePermission(list->readWriteLock);
-
     while (list->length > 0)
     {
         // NOLINTNEXTLINE
         List_RemoveElement(list, list->tail);
     }
-
-    ReadWriteLock_ReleaseWritePermission(list->readWriteLock);
-}
-
-void List_Destroy(List *list)
-{
-    ReadWriteLock_GetWritePermission(list->readWriteLock);
-
-    while (list->length > 0)
-    {
-        // NOLINTNEXTLINE
-        List_RemoveElement(list, list->tail);
-    }
-
-    ReadWriteLock_Destroy(list->readWriteLock);
 }
 
 int List_Insert(List *list, const void *data)
@@ -231,31 +213,6 @@ int List_RemoveElementWithMatchingData(List *list, void *data)
     return List_RemoveElement(list, referenceElement);
 }
 
-/// @brief Finds an element in the list
-/// @param list The list to search through
-/// @param element The element to search for
-/// @return -1 if element not found, otherwise returns position of element
-/// Do not use this if you are cycling through a list, manually assign ListElmt through a while loop.
-int List_GetElementPosition(List *list, ListElmt *element)
-{
-    if (list->length < 1)
-    {
-        return -1;
-    }
-
-    unsigned int i;
-    ListElmt *referenceElement = list->head;
-    for (i = 0; i < list->length; i++)
-    {
-        if (element == referenceElement)
-        {
-            return (int)i;
-        }
-    }
-
-    return -1;
-}
-
 /// @brief Finds the first occurence of the data pointer in the list.
 /// Do not use this if you are cycling through a list, manually assign ListElmt through a while loop.
 /// @param list The list to search through
@@ -273,6 +230,50 @@ int List_GetDataPosition(List *list, void *data)
     for (i = 0; i < list->length; i++)
     {
         if (data == referenceElement->data)
+        {
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
+short List_GetDataAtPosition(List *list, void **data, unsigned int position)
+{
+    if (position > list->length)
+    {
+        return FALSE;
+    }
+
+    ListElmt *referenceElement = list->head;
+    unsigned int i;
+    for (i = 0; i < position; i++)
+    {
+        referenceElement = referenceElement->next;
+    }
+
+    *data = referenceElement->data;
+
+    return TRUE;
+}
+
+/// @brief Finds an element in the list
+/// @param list The list to search through
+/// @param element The element to search for
+/// @return -1 if element not found, otherwise returns position of element
+/// Do not use this if you are cycling through a list, manually assign ListElmt through a while loop.
+int List_GetElementPosition(List *list, ListElmt *element)
+{
+    if (list->length < 1)
+    {
+        return -1;
+    }
+
+    unsigned int i;
+    ListElmt *referenceElement = list->head;
+    for (i = 0; i < list->length; i++)
+    {
+        if (element == referenceElement)
         {
             return (int)i;
         }
@@ -322,6 +323,22 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
     *element = referenceElement;
 
     return TRUE;
+}
+
+// BEFORECOMMIT: test this thoroughly
+void List_GetAsArray(List *list, void **returnedArray)
+{
+    // Per C standard void and char pointer must have same representation
+    char **array = malloc(list->length * sizeof(void *));
+    unsigned int counter = 0;
+    ListElmt *referenceElement = list->head;
+    while (referenceElement != NULL)
+    {
+        array[counter] = referenceElement->data;
+        referenceElement = referenceElement->next;
+    }
+
+    (*returnedArray) = array;
 }
 
 void List_FreeOnRemove(void *data)

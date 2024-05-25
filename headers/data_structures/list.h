@@ -20,12 +20,10 @@ typedef struct List_
     void (*destroy)(void *data);
     ListElmt *head;
     ListElmt *tail;
-    ReadWriteLock *readWriteLock;
 } List;
 
 void List_Init(List *list, void (*destroy)(void *data));
 void List_Clear(List *list);
-void List_Destroy(List *list);
 
 int List_Insert(List *list, const void *data);
 int List_InsertAt(List *list, const void *data, int position);
@@ -36,10 +34,14 @@ int List_RemovePosition(List *list, int position);
 int List_RemoveElement(List *list, ListElmt *element);
 int List_RemoveElementWithMatchingData(List *list, void *data);
 
-int List_GetElementPosition(List *list, ListElmt *element);
 int List_GetDataPosition(List *list, void *data);
+short List_GetDataAtPosition(List *list, void **data, unsigned int position);
+
+int List_GetElementPosition(List *list, ListElmt *element);
 short List_GetElementAtPosition(List *, ListElmt **, unsigned int);
 short List_GetElementWithMatchingData(List *, ListElmt **, void *);
+
+void List_GetAsArray(List *list, void **returnedArray);
 
 void List_FreeOnRemove(void *data);
 

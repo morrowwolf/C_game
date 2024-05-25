@@ -20,7 +20,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
                                                   DEFAULT_SCREEN_SIZE_Y);
 
     HBITMAP oldBitmap = SelectObject(bufferDC, bufferBitmap);
-    // NOLINTNEXTLINE
+
     HGDIOBJ original = SelectObject(bufferDC, GetStockObject(WHITE_PEN));
 
     SetMapMode(bufferDC, MM_ANISOTROPIC);
@@ -45,26 +45,27 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
 
         FillRect(bufferDC, &rect, GetStockObject(BLACK_BRUSH));
 
-        ListIterator *entitiesIterator;
-        ListIterator_Init(&entitiesIterator, &GAMESTATE->entities, ReadWriteLock_Read);
-        Entity *referenceEntity;
-        while (ListIterator_Next(entitiesIterator, (void **)(&referenceEntity)))
+        List *entities;
+        ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
+        ListIterator entitiesIterator;
+        ListIterator_Init(&entitiesIterator, entities);
+        Entity *entity;
+        while (ListIterator_Next(&entitiesIterator, (void **)(&entity)))
         {
-            if (referenceEntity->alive == ENTITY_DEAD)
+            if (entity->alive == ENTITY_DEAD)
             {
                 continue;
             }
 
-            ListIterator *onDrawIterator;
-            ListIterator_Init(&onDrawIterator, &referenceEntity->onDraw, ReadWriteLock_Read);
+            ListIterator onDrawIterator;
+            ListIterator_Init(&onDrawIterator, &entity->onDraw);
             void (*referenceOnDraw)(Entity *, HDC *);
-            while (ListIterator_Next(onDrawIterator, (void **)(&referenceOnDraw)))
+            while (ListIterator_Next(&onDrawIterator, (void **)(&referenceOnDraw)))
             {
-                referenceOnDraw(referenceEntity, &bufferDC);
+                referenceOnDraw(entity, &bufferDC);
             }
-            ListIterator_Destroy(onDrawIterator);
         }
-        ListIterator_Destroy(entitiesIterator);
+        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
         TCHAR buffer[32];
         RECT formattingRect;
@@ -83,9 +84,11 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
             TextOut(bufferDC, i + (12 * (i - 48)), DEFAULT_SCREEN_SIZE_Y - 30, buffer, _tcslen(buffer));
         }
 
-        if (GAMESTATE->fighters.length > 0)
+        List *fighters;
+        ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
+        if (fighters->length > 0)
         {
-            if (((Entity *)(GAMESTATE->fighters.head->data))->colliding)
+            if (((Entity *)(fighters.head->data))->colliding)
             {
                 TextOut(bufferDC, 48, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
             }
@@ -94,6 +97,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
                 TextOut(bufferDC, 48, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
             }
         }
+        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
 
         formattingRect.right = 100;
         formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 70;
@@ -104,14 +108,6 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
 
 #endif
-        formattingRect.right = DEFAULT_SCREEN_SIZE_X;
-        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 20;
-        formattingRect.left = 0;
-        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 30;
-
-        _stprintf(buffer, TEXT("%d"), GAMESTATE->asteroids.length);
-        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, DT_INTERNAL_FLAGS);
-
         if (!GAMESTATE->running)
         {
             formattingRect.right = DEFAULT_SCREEN_SIZE_X;
@@ -119,7 +115,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
             formattingRect.left = 0;
             formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 60;
 
-            _stprintf(buffer, TEXT("Game Paused [ESC]"), GAMESTATE->asteroids.length);
+            _stprintf(buffer, TEXT("Game Paused [ESC]"));
             DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, DT_INTERNAL_FLAGS);
         }
 

@@ -1,23 +1,25 @@
 
 #include "../../headers/data_structures/read_write_lock.h"
 
-void ReadWriteLock_Init(ReadWriteLock **readWriteLock)
+void ReadWriteLock_Init(ReadWriteLock *readWriteLock, void *data)
 {
-    *readWriteLock = malloc(sizeof(ReadWriteLock));
-    ZeroMemory(*readWriteLock, sizeof(ReadWriteLock));
+    ZeroMemory(readWriteLock, sizeof(ReadWriteLock));
 
-    (*readWriteLock)->writeSemaphore = CreateSemaphore(NULL, MAX_WRITERS, MAX_WRITERS, NULL);
-    (*readWriteLock)->readSemaphore = CreateSemaphore(NULL, MAX_READERS, MAX_READERS, NULL);
+    readWriteLock->writeSemaphore = CreateSemaphore(NULL, MAX_WRITERS, MAX_WRITERS, NULL);
+    readWriteLock->readSemaphore = CreateSemaphore(NULL, MAX_READERS, MAX_READERS, NULL);
+    readWriteLock->protectedData = data;
 }
 
+/// @brief Closes the semaphore handles and frees the memory for a ReadWriteLock.
+/// Insure you handle the protected data and have a write lock before calling this.
+/// @param readWriteLock The ReadWriteLock to be destroyed
 void ReadWriteLock_Destroy(ReadWriteLock *readWriteLock)
 {
     CloseHandle(readWriteLock->writeSemaphore);
     CloseHandle(readWriteLock->readSemaphore);
-    free(readWriteLock);
 }
 
-void ReadWriteLock_GetWritePermission(ReadWriteLock *readWriteLock)
+void ReadWriteLock_GetWritePermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
@@ -30,16 +32,20 @@ void ReadWriteLock_GetWritePermission(ReadWriteLock *readWriteLock)
         WaitForSingleObject(readWriteLock->readSemaphore, INFINITE);
     }
 
+    (*protectedData) = readWriteLock->protectedData;
+
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
 #endif
 }
 
-void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *readWriteLock)
+void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
 #endif
+
+    (*protectedData) = NULL;
 
     ReleaseSemaphore(readWriteLock->readSemaphore, MAX_READERS, NULL);
     ReleaseSemaphore(readWriteLock->writeSemaphore, MAX_WRITERS, NULL);
@@ -49,7 +55,7 @@ void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *readWriteLock)
 #endif
 }
 
-void ReadWriteLock_GetReadPermission(ReadWriteLock *readWriteLock)
+void ReadWriteLock_GetReadPermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
@@ -59,16 +65,20 @@ void ReadWriteLock_GetReadPermission(ReadWriteLock *readWriteLock)
     WaitForSingleObject(readWriteLock->readSemaphore, INFINITE);
     ReleaseSemaphore(readWriteLock->writeSemaphore, 1, NULL);
 
+    (*protectedData) = readWriteLock->protectedData;
+
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
 #endif
 }
 
-void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock)
+void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
 #endif
+
+    (*protectedData) = NULL;
 
     ReleaseSemaphore(readWriteLock->readSemaphore, 1, NULL);
 
