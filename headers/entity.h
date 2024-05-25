@@ -41,6 +41,7 @@ struct EntityInternal
 void ZeroAndInitEntity(Entity **);
 void EntityDeath(Entity *);
 void EntityDestroy(Entity *);
+void EntitySpawn(Entity *);
 
 void CalculateAndSetRotationOffsetVertices(Entity *);
 double CalculateXPointRotation(Point *, double);
@@ -62,7 +63,17 @@ void OnCollisionDeath(Entity *, Entity *);
 void OnDrawVertexLines(Entity *, HDC *);
 
 void OnTickCheckCollision(Entity *);
-int isInBetween(double, double, double);
+typedef struct
+{
+    Entity *entity;
+    Point location;
+    List vertices;
+} OnTickCheckCollisionOtherEntityDataHolder;
+
+void OnTickCheckCollisionOtherEntityDataHolder_Init(OnTickCheckCollisionOtherEntityDataHolder *, Entity *, Point *, List *);
+void OnTickCheckCollisionOtherEntityDataHolder_Destroy(OnTickCheckCollisionOtherEntityDataHolder *);
+void List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove(void *);
+int IsInBetween(double, double, double);
 
 void OnTickRotation(Entity *);
 

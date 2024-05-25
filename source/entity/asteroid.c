@@ -19,15 +19,24 @@ void SpawnAsteroid()
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
-    List_Insert(&GAMESTATE->asteroids, settingUpEntity);
-    List_Insert(&GAMESTATE->entities, settingUpEntity);
+    List *asteroids;
+    ReadWriteLock_GetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+    List_Insert(asteroids, settingUpEntity);
+
+    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+    EntitySpawn(settingUpEntity);
 }
 
 void AsteroidDestroy(Entity *entity)
 {
-    ReadWriteLock_GetWritePermission(GAMESTATE->asteroids.readWriteLock);
-    List_RemoveElementWithMatchingData(&GAMESTATE->asteroids, entity);
-    ReadWriteLock_ReleaseWritePermission(GAMESTATE->asteroids.readWriteLock);
+    List *asteroids;
+    ReadWriteLock_GetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+    List_RemoveElementWithMatchingData(asteroids, entity);
+
+    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);
 
     EntityDestroy(entity);
 }

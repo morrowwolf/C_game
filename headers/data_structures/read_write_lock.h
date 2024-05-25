@@ -5,6 +5,9 @@
 // #define DEBUG_SEMAPHORES 1
 
 #include <Windows.h>
+#include "list.h"
+#include "list_iterator.h"
+
 #ifdef DEBUG_SEMAPHORES
 #include <tchar.h>
 #include <stdio.h>
@@ -32,6 +35,23 @@ void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *, void **);
 
 void ReadWriteLock_GetReadPermission(ReadWriteLock *, void **);
 void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *, void **);
+
+enum ReadWriteLock_PermissionType
+{
+    ReadWriteLock_Read,
+    ReadWriteLock_Write
+};
+
+typedef struct
+{
+    enum ReadWriteLock_PermissionType permissionType;
+    ReadWriteLock *readWriteLock;
+    void *returnedData;
+} ReadWriteLock_PermissionRequest;
+
+short ReadWriteLock_GetMultiplePermissions(List *, unsigned int);
+void ReadWriteLock_ReleaseMultiplePermissions(List *);
+void List_DestroyReadWriteLockPermissionRequestOnRemove(void *);
 
 #ifdef DEBUG_SEMAPHORES
 typedef LONG NTSTATUS;

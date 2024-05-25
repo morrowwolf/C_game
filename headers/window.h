@@ -16,7 +16,6 @@ typedef struct
     HANDLE windowHandleInitializedEvent;
     unsigned short currentBufferUsed;
 
-    HANDLE bufferHDCSetupMutexes[BUFFER_THREAD_COUNT];
     HANDLE bufferDrawingMutexes[BUFFER_THREAD_COUNT];
     HANDLE bufferRedrawSemaphores[BUFFER_THREAD_COUNT];
     HDC bufferMemDCs[BUFFER_THREAD_COUNT];

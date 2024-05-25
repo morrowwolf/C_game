@@ -11,8 +11,8 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 
-    void *arrayOfTasksCompleteSyncEvents;
-    List_GetAsArray(&TASKSTATE->tasksCompleteSyncEvents, &arrayOfTasksCompleteSyncEvents);
+    HANDLE *arrayOfTasksCompleteSyncEvents;
+    List_GetAsArray(&TASKSTATE->tasksCompleteSyncEvents, (void **)&arrayOfTasksCompleteSyncEvents);
     unsigned short syncEventCount = TASKSTATE->tasksCompleteSyncEvents.length;
 
     unsigned short asteroidSpawnDelayCounter = 0;
@@ -63,26 +63,36 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List *fighters;
         ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
 
-        if (fighters->length < MAX_FIGHTERS)
+        unsigned int fighterCount = fighters->length;
+
+        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
+
+        if (fighterCount < MAX_FIGHTERS)
         {
             SpawnPlayerFighter();
         }
 
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
-
         List *asteroids;
         ReadWriteLock_GetReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
 
-        if (asteroids->length < MAX_ASTEROIDS && asteroidSpawnDelayCounter >= 100 + (asteroids->length * 4))
+        unsigned int asteroidCount = asteroids->length;
+
+        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+        // BEFORE COMMIT: Put this back
+        if (asteroidCount < 1 && asteroidSpawnDelayCounter >= 100 + (asteroidCount * 4))
         {
             SpawnAsteroid();
             asteroidSpawnDelayCounter = 0;
         }
         asteroidSpawnDelayCounter++;
 
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
-
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
+
+        for (unsigned short i = 0; i < syncEventCount; i++)
+        {
+            ResetEvent(arrayOfTasksCompleteSyncEvents[i]);
+        }
 
         // The following should always be last:
         List *deadEntities;

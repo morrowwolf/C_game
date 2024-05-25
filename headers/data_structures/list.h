@@ -2,8 +2,7 @@
 #ifndef DLIST_H
 #define DLIST_H
 
-#include <stdlib.h>
-#include "read_write_lock.h"
+#include <windows.h>
 
 typedef struct ListElmt_
 {
@@ -44,5 +43,6 @@ short List_GetElementWithMatchingData(List *, ListElmt **, void *);
 void List_GetAsArray(List *list, void **returnedArray);
 
 void List_FreeOnRemove(void *data);
+void List_CloseHandleOnRemove(void *data);
 
 #endif

@@ -39,6 +39,34 @@ void ReadWriteLock_GetWritePermission(ReadWriteLock *readWriteLock, void **prote
 #endif
 }
 
+short ReadWriteLock_GetWritePermissionTimeout(ReadWriteLock *readWriteLock, void **protectedData, unsigned int timeout)
+{
+#ifdef DEBUG_SEMAPHORES
+    SemaphoreDebugOutput(readWriteLock);
+#endif
+
+    if (WaitForSingleObject(readWriteLock->writeSemaphore, timeout) != WAIT_OBJECT_0)
+    {
+        return FALSE;
+    }
+
+    int i;
+    for (i = 0; i < MAX_READERS; i++)
+    {
+        if (WaitForSingleObject(readWriteLock->readSemaphore, timeout) != WAIT_OBJECT_0)
+        {
+            return FALSE;
+        }
+    }
+
+    (*protectedData) = readWriteLock->protectedData;
+    return TRUE;
+
+#ifdef DEBUG_SEMAPHORES
+    SemaphoreDebugOutput(readWriteLock);
+#endif
+}
+
 void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
@@ -72,6 +100,46 @@ void ReadWriteLock_GetReadPermission(ReadWriteLock *readWriteLock, void **protec
 #endif
 }
 
+/**
+ * @brief Gets read permission with a timeout from the specified ReadWriteLock.
+ *
+ * This function attempts to acquire read permission from the specified ReadWriteLock within the given timeout period.
+ * If the read permission is acquired successfully, the protected data associated with the lock is returned through the `protectedData` parameter.
+ *
+ * @param readWriteLock A pointer to the ReadWriteLock from which to acquire read permission.
+ * @param protectedData A pointer to a variable that will hold the protected data associated with the lock if read permission is acquired successfully.
+ * @param timeout The maximum time (in milliseconds) to wait for acquiring read permission.
+ *
+ * @return A value indicating the result of the operation:
+ *         - TRUE if read permission is acquired successfully.
+ *         - FALSE if an error occurs or the timeout period is exceeded.
+ */
+short ReadWriteLock_GetReadPermissionTimeout(ReadWriteLock *readWriteLock, void **protectedData, unsigned int timeout)
+{
+#ifdef DEBUG_SEMAPHORES
+    SemaphoreDebugOutput(readWriteLock);
+#endif
+
+    if (WaitForSingleObject(readWriteLock->writeSemaphore, timeout) != WAIT_OBJECT_0)
+    {
+        return FALSE;
+    }
+
+    if (WaitForSingleObject(readWriteLock->readSemaphore, timeout) != WAIT_OBJECT_0)
+    {
+        return FALSE;
+    }
+
+    ReleaseSemaphore(readWriteLock->writeSemaphore, 1, NULL);
+
+    (*protectedData) = readWriteLock->protectedData;
+    return TRUE;
+
+#ifdef DEBUG_SEMAPHORES
+    SemaphoreDebugOutput(readWriteLock);
+#endif
+}
+
 void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock, void **protectedData)
 {
 #ifdef DEBUG_SEMAPHORES
@@ -85,6 +153,101 @@ void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock, void **pr
 #ifdef DEBUG_SEMAPHORES
     SemaphoreDebugOutput(readWriteLock);
 #endif
+}
+
+short ReadWriteLock_GetMultiplePermissions(List *listOfPermissions, unsigned int timeout)
+{
+    ListIterator listOfPermissionsIterator;
+    ListIterator_Init(&listOfPermissionsIterator, listOfPermissions);
+
+    ReadWriteLock_PermissionRequest *permissionRequest;
+    while (ListIterator_Next(&listOfPermissionsIterator, (void **)&permissionRequest))
+    {
+        if (permissionRequest->permissionType == ReadWriteLock_Read)
+        {
+            if (ReadWriteLock_GetReadPermissionTimeout(permissionRequest->readWriteLock, &permissionRequest->returnedData, timeout) == FALSE)
+            {
+                while (ListIterator_Prev(&listOfPermissionsIterator, (void **)&permissionRequest))
+                {
+                    if (permissionRequest->permissionType == ReadWriteLock_Read)
+                    {
+                        ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+                    }
+                    else if (permissionRequest->permissionType == ReadWriteLock_Write)
+                    {
+                        ReadWriteLock_ReleaseWritePermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+                    }
+                }
+                return FALSE;
+            }
+        }
+        else if (permissionRequest->permissionType == ReadWriteLock_Write)
+        {
+            if (ReadWriteLock_GetWritePermissionTimeout(permissionRequest->readWriteLock, &permissionRequest->returnedData, timeout) == FALSE)
+            {
+                while (ListIterator_Prev(&listOfPermissionsIterator, (void **)&permissionRequest))
+                {
+                    if (permissionRequest->permissionType == ReadWriteLock_Read)
+                    {
+                        ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+                    }
+                    else if (permissionRequest->permissionType == ReadWriteLock_Write)
+                    {
+                        ReadWriteLock_ReleaseWritePermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+                    }
+                }
+                return FALSE;
+            }
+        }
+        else
+        {
+            abort();
+        }
+    }
+
+    return TRUE;
+}
+
+void ReadWriteLock_ReleaseMultiplePermissions(List *listOfPermissions)
+{
+    ListIterator listOfPermissionsIterator;
+    ListIterator_Init(&listOfPermissionsIterator, listOfPermissions);
+
+    ReadWriteLock_PermissionRequest *permissionRequest;
+    while (ListIterator_Next(&listOfPermissionsIterator, (void **)&permissionRequest))
+    {
+        if (permissionRequest->permissionType == ReadWriteLock_Read)
+        {
+            ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+        }
+        else if (permissionRequest->permissionType == ReadWriteLock_Write)
+        {
+            ReadWriteLock_ReleaseWritePermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+        }
+        else
+        {
+            abort();
+        }
+    }
+}
+
+void List_DestroyReadWriteLockPermissionRequestOnRemove(void *data)
+{
+    ReadWriteLock_PermissionRequest *permissionRequest = (ReadWriteLock_PermissionRequest *)data;
+    if (permissionRequest->permissionType == ReadWriteLock_Read)
+    {
+        ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+    }
+    else if (permissionRequest->permissionType == ReadWriteLock_Write)
+    {
+        ReadWriteLock_ReleaseWritePermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
+    }
+    else
+    {
+        abort();
+    }
+
+    free(permissionRequest);
 }
 
 #ifdef DEBUG_SEMAPHORES

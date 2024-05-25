@@ -26,10 +26,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Init(&threadHandles, NULL);
 	HANDLE threadHandle;
 
-#ifndef CPU_GRAPHICS
-	HANDLE threadHandles[1];
-#endif
-
 #ifdef CPU_GRAPHICS
 
 	SCREEN = calloc(1, sizeof(Screen));
@@ -54,6 +50,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 #endif
 
 	TASKSTATE = calloc(1, sizeof(TaskState));
+
+	List *taskQueue = malloc(sizeof(List));
+	List_Init(taskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->taskQueue, taskQueue);
+
 	List_Init(&TASKSTATE->tasksCompleteSyncEvents, NULL);
 	List_Init(&TASKSTATE->tasksQueuedSyncEvents, NULL);
 
@@ -62,20 +63,37 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	for (i = 0; i < (systemInfo.dwNumberOfProcessors - BUFFER_THREAD_COUNT - 1); i++)
 	{
-		List_Insert(&TASKSTATE->tasksCompleteSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->tasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
 		List_Insert(&TASKSTATE->tasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
-		threadHandle = CreateThread(NULL, 0, TaskHandler, NULL, 0, NULL);
+
+		TaskHandlerArgs *taskHandlerArgs = calloc(1, sizeof(TaskHandlerArgs));
+		taskHandlerArgs->taskHandlerID = i;
+
+		threadHandle = CreateThread(NULL, 0, TaskHandler, taskHandlerArgs, 0, NULL);
 		List_Insert(&threadHandles, threadHandle);
 	}
-
-	TCHAR buffer[32];
-	_stprintf(buffer, TEXT("%d"), systemInfo.dwNumberOfProcessors);
-	OutputDebugString(buffer);
 
 	threadHandle = CreateThread(NULL, 0, GamestateHandler, NULL, 0, NULL);
 	List_Insert(&threadHandles, threadHandle);
 
 	WindowHandler(hInstance, iCmdShow);
+
+	ListIterator tasksQueuedEventsIterator;
+	ListIterator_Init(&tasksQueuedEventsIterator, &TASKSTATE->tasksQueuedSyncEvents);
+	HANDLE tasksQueuedSyncEvent;
+	while (ListIterator_Next(&tasksQueuedEventsIterator, (void **)&tasksQueuedSyncEvent))
+	{
+		SetEvent(tasksQueuedSyncEvent);
+	}
+
+#ifdef CPU_GRAPHICS
+
+	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
+	{
+		ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[i], 1, NULL);
+	}
+
+#endif
 
 	void *arrayOfThreadHandles;
 	List_GetAsArray(&threadHandles, &arrayOfThreadHandles);
@@ -84,6 +102,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	free(arrayOfThreadHandles);
 	List_Clear(&threadHandles);
+
+	ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+	List_Clear(taskQueue);
+	free(taskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->taskQueue);
+
+	List_Clear(&TASKSTATE->tasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->tasksCompleteSyncEvents);
+
+	free(TASKSTATE);
+
+#ifdef CPU_GRAPHICS
+
+	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
+	{
+		CloseHandle(SCREEN->bufferRedrawSemaphores[i]);
+		CloseHandle(SCREEN->bufferDrawingMutexes[i]);
+	}
+
+	free(SCREEN);
+
+#endif
 
 	// All threads should be done at this point so we're just cleaning up.
 	ListIterator entitiesIterator;
@@ -110,7 +150,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	ReadWriteLock_Destroy(&GAMESTATE->fighters);
 
 	free(GAMESTATE);
-	free(SCREEN);
 
 #ifdef DEBUG
 	TCHAR buffer[64];

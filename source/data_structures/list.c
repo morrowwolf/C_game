@@ -325,10 +325,8 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
     return TRUE;
 }
 
-// BEFORECOMMIT: test this thoroughly
 void List_GetAsArray(List *list, void **returnedArray)
 {
-    // Per C standard void and char pointer must have same representation
     char **array = malloc(list->length * sizeof(void *));
     unsigned int counter = 0;
     ListElmt *referenceElement = list->head;
@@ -336,6 +334,7 @@ void List_GetAsArray(List *list, void **returnedArray)
     {
         array[counter] = referenceElement->data;
         referenceElement = referenceElement->next;
+        counter++;
     }
 
     (*returnedArray) = array;
@@ -344,4 +343,9 @@ void List_GetAsArray(List *list, void **returnedArray)
 void List_FreeOnRemove(void *data)
 {
     free(data);
+}
+
+void List_CloseHandleOnRemove(void *data)
+{
+    CloseHandle(data);
 }

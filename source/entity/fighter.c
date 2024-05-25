@@ -22,15 +22,24 @@ void SpawnPlayerFighter()
     List_Insert(&settingUpEntity->onTick, OnTickRotation);
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
-    List_Insert(&GAMESTATE->fighters, settingUpEntity);
-    List_Insert(&GAMESTATE->entities, settingUpEntity);
+    List *fighters;
+    ReadWriteLock_GetWritePermission(&GAMESTATE->fighters, (void **)&fighters);
+
+    List_Insert(fighters, settingUpEntity);
+
+    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->fighters, (void **)&fighters);
+
+    EntitySpawn(settingUpEntity);
 }
 
 void FighterDestroy(Entity *entity)
 {
-    ReadWriteLock_GetWritePermission(GAMESTATE->fighters.readWriteLock);
-    List_RemoveElementWithMatchingData(&GAMESTATE->fighters, entity);
-    ReadWriteLock_ReleaseWritePermission(GAMESTATE->fighters.readWriteLock);
+    List *fighters;
+    ReadWriteLock_GetWritePermission(&GAMESTATE->fighters, (void **)&fighters);
+
+    List_RemoveElementWithMatchingData(fighters, entity);
+
+    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->fighters, (void **)&fighters);
 
     EntityDestroy(entity);
 }

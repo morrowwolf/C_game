@@ -13,6 +13,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     SetupBulletVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
 
+    // TODO: Bullets still killing the fighter, partial velocity updates should fix
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
     List_Insert(&settingUpEntity->onCollision, OnCollisionKill);
     List_Insert(&settingUpEntity->onDeath, OnDeathBullet);
@@ -22,14 +23,24 @@ void SpawnFiredBullet(Entity *firingEntity)
     List_Insert(&settingUpEntity->onTick, OnTickVelocity);
     List_Insert(&settingUpEntity->onTick, OnTickExpire);
 
-    List_Insert(&GAMESTATE->entities, settingUpEntity);
+    EntitySpawn(settingUpEntity);
 }
 
 #define EXTRA_RADIUS_MULTIPLIER 1.8
 void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity)
 {
-    settingUpEntity->location.x = firingEntity->location.x + (fabs(firingEntity->velocity.x) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * cos(firingEntity->rotation);
-    settingUpEntity->location.y = firingEntity->location.y + (fabs(firingEntity->velocity.y) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
+    Point *settingUpEntityLocation;
+    ReadWriteLock_GetWritePermission(&settingUpEntity->location, (void **)&settingUpEntityLocation);
+
+    Point *firingEntityLocation;
+    ReadWriteLock_GetReadPermission(&firingEntity->location, (void **)&firingEntityLocation);
+
+    settingUpEntityLocation->x = firingEntityLocation->x + (fabs(firingEntity->velocity.x) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * cos(firingEntity->rotation);
+    settingUpEntityLocation->y = firingEntityLocation->y + (fabs(firingEntity->velocity.y) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
+
+    ReadWriteLock_ReleaseReadPermission(&firingEntity->location, (void **)&firingEntityLocation);
+
+    ReadWriteLock_ReleaseWritePermission(&settingUpEntity->location, (void **)&settingUpEntityLocation);
 }
 #undef EXTRA_RADIUS_MULTIPLIER
 
@@ -75,14 +86,13 @@ void OnCollisionKill(Entity *entity, Entity *collidingEntity)
 {
     UNREFERENCED_PARAMETER(entity);
 
-    ListIterator *onDeathIterator;
-    ListIterator_Init(&onDeathIterator, &collidingEntity->onDeath, ReadWriteLock_Read);
+    ListIterator onDeathIterator;
+    ListIterator_Init(&onDeathIterator, &collidingEntity->onDeath);
     void (*onDeath)(Entity *);
-    while (ListIterator_Next(onDeathIterator, (void **)&onDeath))
+    while (ListIterator_Next(&onDeathIterator, (void **)&onDeath))
     {
         onDeath(collidingEntity);
     }
-    ListIterator_Destroy(onDeathIterator);
 }
 
 void OnDeathBullet(Entity *entity)
@@ -95,13 +105,12 @@ void OnTickExpire(Entity *entity)
     entity->lifetime -= 1;
     if (entity->lifetime <= 0)
     {
-        ListIterator *onDeathIterator;
-        ListIterator_Init(&onDeathIterator, &entity->onDeath, ReadWriteLock_Read);
+        ListIterator onDeathIterator;
+        ListIterator_Init(&onDeathIterator, &entity->onDeath);
         void (*onDeath)(Entity *);
-        while (ListIterator_Next(onDeathIterator, (void **)&onDeath))
+        while (ListIterator_Next(&onDeathIterator, (void **)&onDeath))
         {
             onDeath(entity);
         }
-        ListIterator_Destroy(onDeathIterator);
     }
 }

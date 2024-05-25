@@ -6,6 +6,8 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
     TaskHandlerArgs *taskHandlerArgs = (TaskHandlerArgs *)lpParam;
     unsigned int taskHandlerID = taskHandlerArgs->taskHandlerID;
 
+    free(taskHandlerArgs);
+
     HANDLE tasksQueuedEvent;
     List_GetDataAtPosition(&TASKSTATE->tasksQueuedSyncEvents, &tasksQueuedEvent, taskHandlerID);
 
@@ -30,6 +32,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
 
         if (task == NULL)
         {
+            ResetEvent(tasksQueuedEvent);
             SetEvent(tasksCompleteEvent);
             continue;
         }
@@ -86,6 +89,5 @@ void Task_QueueTasks(List *list)
     while (ListIterator_Next(&tasksQueuedEventsIterator, (void **)&tasksQueuedSyncEvent))
     {
         SetEvent(tasksQueuedSyncEvent);
-        ResetEvent(tasksQueuedSyncEvent);
     }
 }

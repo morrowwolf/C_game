@@ -88,7 +88,7 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
         if (fighters->length > 0)
         {
-            if (((Entity *)(fighters.head->data))->colliding)
+            if (((Entity *)(fighters->head->data))->colliding)
             {
                 TextOut(bufferDC, 48, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
             }

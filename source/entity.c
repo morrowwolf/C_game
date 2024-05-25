@@ -4,16 +4,23 @@ void ZeroAndInitEntity(Entity **entity)
 {
     *entity = malloc(sizeof(Entity));
     ZeroMemory(*entity, sizeof(Entity));
+
+    Point *location = calloc(1, sizeof(Point));
+    ReadWriteLock_Init(&(*entity)->location, location);
+
     List_Init(&(*entity)->baseVertices, List_FreeOnRemove);
+
     List *rotationOffsetVertices = calloc(1, sizeof(List));
     List_Init(rotationOffsetVertices, List_FreeOnRemove);
     ReadWriteLock_Init(&(*entity)->rotationOffsetVertices, rotationOffsetVertices);
+
     List_Init(&(*entity)->onCollision, NULL);
     List_Init(&(*entity)->onDeath, NULL);
     List_Insert(&(*entity)->onDeath, EntityDeath);
     List_Init(&(*entity)->onDraw, NULL);
     List_Init(&(*entity)->onTick, NULL);
     (*entity)->onDestroy = EntityDestroy;
+
     (*entity)->entityNumber = GAMESTATE->runningEntityID;
     (*entity)->alive = ENTITY_ALIVE;
     GAMESTATE->runningEntityID += 1;
@@ -38,13 +45,22 @@ void EntityDestroy(Entity *entity)
 {
     List *entities;
     ReadWriteLock_GetWritePermission(&GAMESTATE->entities, (void **)&entities);
+
     List_RemoveElementWithMatchingData(entities, entity);
+
     ReadWriteLock_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
+
+    Point *location;
+    ReadWriteLock_GetWritePermission(&entity->location, (void **)&location);
+    free(location);
+    ReadWriteLock_Destroy(&entity->location);
+
     List_Clear(&entity->baseVertices);
 
     List *rotationOffsetVertices;
     ReadWriteLock_GetWritePermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
     List_Clear(rotationOffsetVertices);
+    free(rotationOffsetVertices);
     ReadWriteLock_Destroy(&entity->rotationOffsetVertices);
 
     List_Clear(&entity->onCollision);
@@ -52,6 +68,16 @@ void EntityDestroy(Entity *entity)
     List_Clear(&entity->onDraw);
     List_Clear(&entity->onTick);
     free(entity);
+}
+
+void EntitySpawn(Entity *settingUpEntity)
+{
+    List *entities;
+    ReadWriteLock_GetWritePermission(&GAMESTATE->entities, (void **)&entities);
+
+    List_Insert(entities, settingUpEntity);
+
+    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
 }
 
 void CalculateAndSetRotationOffsetVertices(Entity *entity)
@@ -364,8 +390,37 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
 
 void OnTickCheckCollision(Entity *entity)
 {
-    List entitiesPotentialCollision;
-    List_Init(&entitiesPotentialCollision, NULL);
+    List otherEntitiesPotentialCollision;
+    List_Init(&otherEntitiesPotentialCollision, List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove);
+
+    Point *referenceEntityLocation;
+    ReadWriteLock_GetReadPermission(&entity->location, (void **)&referenceEntityLocation);
+
+    Point entityLocation;
+    entityLocation.x = referenceEntityLocation->x;
+    entityLocation.y = referenceEntityLocation->y;
+
+    ReadWriteLock_ReleaseReadPermission(&entity->location, (void **)&referenceEntityLocation);
+
+    List *referenceEntityRotationOffsetVertices;
+    ReadWriteLock_GetReadPermission(&entity->rotationOffsetVertices, (void **)&referenceEntityRotationOffsetVertices);
+
+    List entityRotationOffsetVertices;
+    List_Init(&entityRotationOffsetVertices, List_FreeOnRemove);
+
+    ListIterator referenceEntityRotationOffsetVerticesIterator;
+    ListIterator_Init(&referenceEntityRotationOffsetVerticesIterator, referenceEntityRotationOffsetVertices);
+    Point *referenceEntityRotationOffsetVertex;
+    while (ListIterator_Next(&referenceEntityRotationOffsetVerticesIterator, (void **)&referenceEntityRotationOffsetVertex))
+    {
+        Point *entityRotationOffsetVertex = malloc(sizeof(Point));
+        entityRotationOffsetVertex->x = referenceEntityRotationOffsetVertex->x;
+        entityRotationOffsetVertex->y = referenceEntityRotationOffsetVertex->y;
+
+        List_Insert(&entityRotationOffsetVertices, entityRotationOffsetVertex);
+    }
+
+    ReadWriteLock_ReleaseReadPermission(&entity->rotationOffsetVertices, (void **)&referenceEntityRotationOffsetVertices);
 
     List *entities;
     ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
@@ -381,44 +436,56 @@ void OnTickCheckCollision(Entity *entity)
         }
         else
         {
-            // STOPPED HERE: We need to get all the ReadWriteLocks in unison
-            // with timeouts on attempted locking and resetting so we don't
-            // ever have a deadlock
-            // Here in particular we need both locations and then the rotation vertices
-            // before releasing the locations
-            // So we get both locations, check if worth looking, then get the vertices
-            // and get a local copy of everything stored for comparisons later
-            // This way we minimize lock time as much as possible through the
-            // computationally difficult section
-            // As a note, the allocation of memory for the lists is likely going
-            // to be the most intensive part of this, if we hold locks on location
-            // and rotation is linked to movement as planned then rotation should
-            // not update while we hold location anyways, no reason to copy or hold
-            // them until we compare locations, same with making local copies of locations
-            Point *otherEntityLocation;
-            ReadWriteLock_GetReadPermission(&otherEntity->location, (void **)&otherEntityLocation);
+            List permissionRequests;
+            List_Init(&permissionRequests, List_DestroyReadWriteLockPermissionRequestOnRemove);
 
-            Point *entityLocation;
-            ReadWriteLock_GetReadPermission(&entity->location, (void **)&entityLocation);
+            ReadWriteLock_PermissionRequest *otherEntityLocationPermissionRequest = calloc(1, sizeof(ReadWriteLock_PermissionRequest));
+            otherEntityLocationPermissionRequest->readWriteLock = &otherEntity->location;
+            otherEntityLocationPermissionRequest->permissionType = ReadWriteLock_Read;
 
-            double otherEntityDistance = max(fabs(otherEntityLocation->x - entityLocation->x),
-                                             fabs(otherEntityLocation->y - entityLocation->y));
+            List_Insert(&permissionRequests, otherEntityLocationPermissionRequest);
 
-            if (otherEntityDistance < (entity->radius + otherEntity->radius))
+            ReadWriteLock_PermissionRequest *otherEntityVerticesPermissionRequest = calloc(1, sizeof(ReadWriteLock_PermissionRequest));
+            otherEntityVerticesPermissionRequest->readWriteLock = &otherEntity->rotationOffsetVertices;
+            otherEntityVerticesPermissionRequest->permissionType = ReadWriteLock_Read;
+
+            List_Insert(&permissionRequests, otherEntityVerticesPermissionRequest);
+
+            while (!ReadWriteLock_GetMultiplePermissions(&permissionRequests, 5))
             {
-                List_Insert(&entitiesPotentialCollision, otherEntity);
+                if (GAMESTATE->exiting)
+                {
+                    List_Clear(&entityRotationOffsetVertices);
+                    List_Clear(&otherEntitiesPotentialCollision);
+                    List_Clear(&permissionRequests);
+                    return;
+                }
             }
 
-            ReadWriteLock_ReleaseReadPermission(&entity->location, (void **)&entityLocation);
-            ReadWriteLock_ReleaseReadPermission(&otherEntity->location, (void **)&otherEntityLocation);
+            Point *referenceOtherEntityLocation = ((ReadWriteLock_PermissionRequest *)(permissionRequests.head->data))->returnedData;
+            double otherEntityDistance = max(fabs(referenceOtherEntityLocation->x - entityLocation.x),
+                                             fabs(referenceOtherEntityLocation->y - entityLocation.y));
+
+            if (otherEntityDistance > (entity->radius + otherEntity->radius))
+            {
+                List_Clear(&permissionRequests);
+                continue;
+            }
+
+            OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder = calloc(1, sizeof(OnTickCheckCollisionOtherEntityDataHolder));
+            OnTickCheckCollisionOtherEntityDataHolder_Init(onTickCheckCollisionOtherEntityDataHolder, otherEntity, referenceOtherEntityLocation, ((ReadWriteLock_PermissionRequest *)(permissionRequests.tail->data))->returnedData);
+
+            List_Insert(&otherEntitiesPotentialCollision, onTickCheckCollisionOtherEntityDataHolder);
+            List_Clear(&permissionRequests);
         }
     }
 
     ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
-    if (entitiesPotentialCollision.length < 1)
+    if (otherEntitiesPotentialCollision.length < 1)
     {
-        List_Clear(&entitiesPotentialCollision);
+        List_Clear(&entityRotationOffsetVertices);
+        List_Clear(&otherEntitiesPotentialCollision);
 
 #ifdef DEBUG
         entity->colliding = FALSE;
@@ -430,73 +497,62 @@ void OnTickCheckCollision(Entity *entity)
     List entitiesColliding;
     List_Init(&entitiesColliding, NULL);
 
-    ListIterator entitiesPotentialCollisionIterator;
-    ListIterator_Init(&entitiesPotentialCollisionIterator, &entitiesPotentialCollision);
-    while (ListIterator_Next(&entitiesPotentialCollisionIterator, (void **)&otherEntity))
+    ListIterator otherEntitiesPotentialCollisionIterator;
+    ListIterator_Init(&otherEntitiesPotentialCollisionIterator, &otherEntitiesPotentialCollision);
+    OnTickCheckCollisionOtherEntityDataHolder *otherEntityDataHolder;
+    while (ListIterator_Next(&otherEntitiesPotentialCollisionIterator, (void **)&otherEntityDataHolder))
     {
 
-        List *entityRotationOffsetVertices;
-        ReadWriteLock_GetReadPermission(&entity->rotationOffsetVertices, (void **)&entityRotationOffsetVertices);
-
         ListIterator entityVerticesIterator;
-        ListIterator_Init(&entityVerticesIterator, entityRotationOffsetVertices);
-        Point *referenceEntityVertex;
-        while (ListIterator_Next(&entityVerticesIterator, (void **)&referenceEntityVertex))
+        ListIterator_Init(&entityVerticesIterator, &entityRotationOffsetVertices);
+        Point *entityVertex;
+        while (ListIterator_Next(&entityVerticesIterator, (void **)&entityVertex))
         {
 
-            Point *entityLocation;
-            ReadWriteLock_GetReadPermission(&entity->location, (void **)&entityLocation);
-
-            Point *otherEntityLocation;
-            ReadWriteLock_GetReadPermission(&otherEntity->location, (void **)&otherEntityLocation);
-
             Point entityPoint;
-            entityPoint.x = referenceEntityVertex->x + entityLocation->x;
-            entityPoint.y = referenceEntityVertex->y + entityLocation->y;
+            entityPoint.x = entityVertex->x + entityLocation.x;
+            entityPoint.y = entityVertex->y + entityLocation.y;
 
-            double otherEntityLocationToEntityPoint = max(fabs(otherEntityLocation->x - entityPoint.x),
-                                                          fabs(otherEntityLocation->y - entityPoint.y));
+            double otherEntityLocationToEntityPoint = max(fabs(otherEntityDataHolder->location.x - entityPoint.x),
+                                                          fabs(otherEntityDataHolder->location.y - entityPoint.y));
 
-            if (otherEntityLocationToEntityPoint > otherEntity->radius)
+            if (otherEntityLocationToEntityPoint > otherEntityDataHolder->entity->radius)
             {
                 continue;
             }
 
-            List *otherEntityRotationOffsetVertices;
-            ReadWriteLock_GetReadPermission(&otherEntity->rotationOffsetVertices, (void **)&otherEntityRotationOffsetVertices);
-
             ListIterator otherEntityVerticesIterator;
-            ListIterator_Init(&otherEntityVerticesIterator, otherEntityRotationOffsetVertices);
+            ListIterator_Init(&otherEntityVerticesIterator, &otherEntityDataHolder->vertices);
             Point *referenceOtherEntityVertex;
             while (ListIterator_Next(&otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex))
             {
                 Point otherEntityPointOne;
-                otherEntityPointOne.x = referenceOtherEntityVertex->x + otherEntityLocation->x;
-                otherEntityPointOne.y = referenceOtherEntityVertex->y + otherEntityLocation->y;
+                otherEntityPointOne.x = referenceOtherEntityVertex->x + otherEntityDataHolder->location.x;
+                otherEntityPointOne.y = referenceOtherEntityVertex->y + otherEntityDataHolder->location.y;
 
                 Point otherEntityPointTwo;
                 if (ListIterator_AtTail(&otherEntityVerticesIterator))
                 {
                     ListIterator_GetHead(&otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
-                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + otherEntityLocation->x;
-                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + otherEntityLocation->y;
+                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + otherEntityDataHolder->location.x;
+                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + otherEntityDataHolder->location.y;
                 }
                 else
                 {
                     ListIterator_Next(&otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
-                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + otherEntityLocation->x;
-                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + otherEntityLocation->y;
+                    otherEntityPointTwo.x = referenceOtherEntityVertex->x + otherEntityDataHolder->location.x;
+                    otherEntityPointTwo.y = referenceOtherEntityVertex->y + otherEntityDataHolder->location.y;
                     ListIterator_Prev(&otherEntityVerticesIterator, (void **)&referenceOtherEntityVertex);
                 }
 
-                double diffXOtherEntityLocationAndEntityPoint = otherEntityLocation->x - entityPoint.x;
-                double diffYOtherEntityLocationAndEntityPoint = otherEntityLocation->y - entityPoint.y;
+                double diffXOtherEntityLocationAndEntityPoint = otherEntityDataHolder->location.x - entityPoint.x;
+                double diffYOtherEntityLocationAndEntityPoint = otherEntityDataHolder->location.y - entityPoint.y;
 
                 double angleToEntityPoint = atan2(diffYOtherEntityLocationAndEntityPoint, diffXOtherEntityLocationAndEntityPoint);
-                double angleToOtherEntityPointOne = atan2(otherEntityLocation->y - otherEntityPointOne.y, otherEntityLocation->x - otherEntityPointOne.x);
-                double angleToOtherEntityPointTwo = atan2(otherEntityLocation->y - otherEntityPointTwo.y, otherEntityLocation->x - otherEntityPointTwo.x);
+                double angleToOtherEntityPointOne = atan2(otherEntityDataHolder->location.y - otherEntityPointOne.y, otherEntityDataHolder->location.x - otherEntityPointOne.x);
+                double angleToOtherEntityPointTwo = atan2(otherEntityDataHolder->location.y - otherEntityPointTwo.y, otherEntityDataHolder->location.x - otherEntityPointTwo.x);
 
-                if ((fabs(angleToOtherEntityPointOne - angleToOtherEntityPointTwo) > M_PI) ? isInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo) : !isInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo))
+                if ((fabs(angleToOtherEntityPointOne - angleToOtherEntityPointTwo) > M_PI) ? IsInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo) : !IsInBetween(angleToEntityPoint, angleToOtherEntityPointOne, angleToOtherEntityPointTwo))
                 {
                     continue;
                 }
@@ -518,7 +574,7 @@ void OnTickCheckCollision(Entity *entity)
 
                 double lineConstant = otherEntityPointOne.y - (slopeOfEntityLine * otherEntityPointOne.x);
 
-                double numerator = (slopeOfEntityLine * otherEntity->location.x) + (-1.0 * otherEntity->location.y) + lineConstant;
+                double numerator = (slopeOfEntityLine * otherEntityDataHolder->location.x) + (-1.0 * otherEntityDataHolder->location.y) + lineConstant;
 
                 double denominator = sqrt(pow(slopeOfEntityLine, 2.0) + 1.0);
 
@@ -540,21 +596,16 @@ void OnTickCheckCollision(Entity *entity)
                     continue;
                 }
 
-                List_Insert(&entitiesColliding, otherEntity);
+                List_Insert(&entitiesColliding, otherEntityDataHolder->entity);
                 break;
             }
-
-            ReadWriteLock_ReleaseReadPermission(&otherEntity->rotationOffsetVertices, (void **)&otherEntityRotationOffsetVertices);
-            ReadWriteLock_ReleaseReadPermission(&otherEntity->location, (void **)&otherEntityLocation);
-            ReadWriteLock_ReleaseReadPermission(&entity->location, (void **)&entityLocation);
         }
-
-        ReadWriteLock_ReleaseReadPermission(&entity->rotationOffsetVertices, (void **)&entityRotationOffsetVertices);
     }
 
     if (entitiesColliding.length < 1)
     {
-        List_Clear(&entitiesPotentialCollision);
+        List_Clear(&entityRotationOffsetVertices);
+        List_Clear(&otherEntitiesPotentialCollision);
         List_Clear(&entitiesColliding);
 
 #ifdef DEBUG
@@ -587,8 +638,42 @@ void OnTickCheckCollision(Entity *entity)
         }
     }
 
-    List_Clear(&entitiesPotentialCollision);
+    List_Clear(&entityRotationOffsetVertices);
+    List_Clear(&otherEntitiesPotentialCollision);
     List_Clear(&entitiesColliding);
+}
+
+void OnTickCheckCollisionOtherEntityDataHolder_Init(OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder, Entity *entity, Point *location, List *verticesList)
+{
+    onTickCheckCollisionOtherEntityDataHolder->entity = entity;
+
+    onTickCheckCollisionOtherEntityDataHolder->location.x = location->x;
+    onTickCheckCollisionOtherEntityDataHolder->location.y = location->y;
+
+    List_Init(&onTickCheckCollisionOtherEntityDataHolder->vertices, List_FreeOnRemove);
+
+    ListIterator verticesListIterator;
+    ListIterator_Init(&verticesListIterator, verticesList);
+    Point *referenceVertex;
+    while (ListIterator_Next(&verticesListIterator, (void **)&referenceVertex))
+    {
+        Point *copiedVertex = malloc(sizeof(Point));
+        copiedVertex->x = referenceVertex->x;
+        copiedVertex->y = referenceVertex->y;
+
+        List_Insert(&onTickCheckCollisionOtherEntityDataHolder->vertices, copiedVertex);
+    }
+}
+
+void OnTickCheckCollisionOtherEntityDataHolder_Destroy(OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder)
+{
+    List_Clear(&onTickCheckCollisionOtherEntityDataHolder->vertices);
+    free(onTickCheckCollisionOtherEntityDataHolder);
+}
+
+void List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove(void *data)
+{
+    OnTickCheckCollisionOtherEntityDataHolder_Destroy(data);
 }
 
 /// @brief Checks if a number is in between two other numbers. Markers can be in either order.
@@ -596,7 +681,7 @@ void OnTickCheckCollision(Entity *entity)
 /// @param firstMarker The first number to check if in between.
 /// @param secondMarker The second number to check if in between.
 /// @return Returns 1 if primary is in between firstMarker and secondMarker. Returns 0 otherwise.
-int isInBetween(double primary, double firstMarker, double secondMarker)
+int IsInBetween(double primary, double firstMarker, double secondMarker)
 {
     if (firstMarker >= secondMarker && (primary < secondMarker || primary > firstMarker))
     {
@@ -634,26 +719,32 @@ void OnTickRotation(Entity *entity)
 
 void OnTickVelocity(Entity *entity)
 {
-    entity->location.x += entity->velocity.x;
-    entity->location.y += entity->velocity.y;
 
-    if (entity->location.x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
+    Point *entityLocation;
+    ReadWriteLock_GetWritePermission(&entity->location, (void **)&entityLocation);
+
+    entityLocation->x += entity->velocity.x;
+    entityLocation->y += entity->velocity.y;
+
+    if (entityLocation->x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entity->location.x = 0.0;
+        entityLocation->x = 0.0;
     }
-    else if (entity->location.x < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
+    else if (entityLocation->x < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entity->location.x = DEFAULT_SCREEN_SIZE_X;
+        entityLocation->x = DEFAULT_SCREEN_SIZE_X;
     }
 
-    if (entity->location.y > DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE)
+    if (entityLocation->y > DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entity->location.y = 0.0;
+        entityLocation->y = 0.0;
     }
-    else if (entity->location.y < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
+    else if (entityLocation->y < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entity->location.y = DEFAULT_SCREEN_SIZE_Y;
+        entityLocation->y = DEFAULT_SCREEN_SIZE_Y;
     }
+
+    ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&entityLocation);
 }
 #undef EXTRA_OFFSCREEN_LOCATION_SPACE
 
