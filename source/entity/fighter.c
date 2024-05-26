@@ -85,7 +85,7 @@ void SetupFighterVertices(Entity *settingUpEntity)
 #define MAIN_DRIVE_ACCELERATION 0.05
 #define THRUSTER_ACCELERATION 0.025
 #define ROTATION_ACCELERATION 0.075
-#define MAX_FIGHTER_VELOCITY 10.0
+#define MAX_FIGHTER_VELOCITY 8.0
 void OnTickKeyAcceleration(Entity *entity)
 {
 
@@ -159,14 +159,13 @@ void OnTickKeyAcceleration(Entity *entity)
         }
     }
 
-    if (fabs(entity->velocity.x) > MAX_FIGHTER_VELOCITY)
-    {
-        entity->velocity.x = MAX_FIGHTER_VELOCITY * SIGNOF(entity->velocity.x);
-    }
+    double velocityMagnitude = sqrt(pow(entity->velocity.x, 2) + pow(entity->velocity.y, 2));
 
-    if (fabs(entity->velocity.y) > MAX_FIGHTER_VELOCITY)
+    if (velocityMagnitude > MAX_FIGHTER_VELOCITY)
     {
-        entity->velocity.y = MAX_FIGHTER_VELOCITY * SIGNOF(entity->velocity.y);
+        double tempAngle = atan2(entity->velocity.y, entity->velocity.x);
+        entity->velocity.x = MAX_FIGHTER_VELOCITY * cos(tempAngle);
+        entity->velocity.y = MAX_FIGHTER_VELOCITY * sin(tempAngle);
     }
 
     if (GAMESTATE->keys['A'])

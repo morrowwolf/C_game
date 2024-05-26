@@ -56,6 +56,8 @@ typedef struct
 
 typedef struct
 {
+    __int8 debugMode;
+
 // 10000ULL is 1 ms in 100ns intervals
 // 156250ULL is 64 ticks per second
 // Given we are going into subtick territory it may be best

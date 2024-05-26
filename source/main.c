@@ -19,6 +19,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	ReadWriteLock_Init(&GAMESTATE->deadEntities, deadEntities);
 	ReadWriteLock_Init(&GAMESTATE->asteroids, asteroids);
 	ReadWriteLock_Init(&GAMESTATE->fighters, fighters);
+#ifdef DEBUG
+	GAMESTATE->debugMode = TRUE;
+#endif
 	GAMESTATE->running = TRUE;
 	GAMESTATE->keyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 

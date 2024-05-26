@@ -802,20 +802,20 @@ void HandleMovementVelocity(Entity *entity)
 
     if (entityLocation->x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entityLocation->x = 0.0;
+        entityLocation->x -= DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
     }
     else if (entityLocation->x < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entityLocation->x = DEFAULT_SCREEN_SIZE_X;
+        entityLocation->x += DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
     }
 
     if (entityLocation->y > DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entityLocation->y = 0.0;
+        entityLocation->y -= DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
     }
     else if (entityLocation->y < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
-        entityLocation->y = DEFAULT_SCREEN_SIZE_Y;
+        entityLocation->y += DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
     }
 
     ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&entityLocation);

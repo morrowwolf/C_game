@@ -110,9 +110,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_KILLFOCUS:
         ZeroMemory(&GAMESTATE->keys, sizeof(GAMESTATE->keys));
 
-#ifndef DEBUG
-        GAMESTATE->running = GAME_PAUSED;
-#endif
+        if (!GAMESTATE->debugMode)
+        {
+            GAMESTATE->running = GAME_PAUSED;
+        }
+
         return 0;
 
     case WM_MOUSEMOVE:
@@ -182,6 +184,11 @@ void WndProcHandlePaint(HWND hWnd, HDC hdc)
 
 void HandleNonGameKeys(UINT_PTR keyCode)
 {
+    if (keyCode == VK_F2)
+    {
+        GAMESTATE->debugMode = (GAMESTATE->debugMode + 1) % 2;
+    }
+
     if (keyCode == VK_ESCAPE)
     {
         GAMESTATE->running = (GAMESTATE->running + 1) % 2;

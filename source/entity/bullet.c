@@ -6,7 +6,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     Entity *settingUpEntity;
 
     ZeroAndInitEntity(&settingUpEntity);
-    settingUpEntity->lifetime = 90;
+    settingUpEntity->lifetime = 60;
 
     SetupBulletLocation(settingUpEntity, firingEntity);
     SetupBulletRotation(settingUpEntity, firingEntity);
@@ -14,7 +14,6 @@ void SpawnFiredBullet(Entity *firingEntity)
     SetupBulletVertices(settingUpEntity);
     SetupRadius(settingUpEntity);
 
-    // TODO: Bullets still killing the fighter, partial velocity updates should fix
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
     List_Insert(&settingUpEntity->onCollision, OnCollisionKill);
     List_Insert(&settingUpEntity->onDeath, OnDeathBullet);
@@ -48,11 +47,11 @@ void SetupBulletRotation(Entity *settingUpEntity, Entity *firingEntity)
     settingUpEntity->rotation = firingEntity->rotation;
 }
 
-#define BULLET_SPEED 5
+#define BULLET_SPEED 8
 void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity)
 {
-    settingUpEntity->velocity.x = firingEntity->velocity.x + (BULLET_SPEED * cos(firingEntity->rotation));
-    settingUpEntity->velocity.y = firingEntity->velocity.y + (BULLET_SPEED * sin(firingEntity->rotation));
+    settingUpEntity->velocity.x = (firingEntity->velocity.x * 0.5) + (BULLET_SPEED * cos(firingEntity->rotation));
+    settingUpEntity->velocity.y = (firingEntity->velocity.y * 0.5) + (BULLET_SPEED * sin(firingEntity->rotation));
 }
 #undef BULLET_SPEED
 

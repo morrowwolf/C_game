@@ -70,61 +70,65 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
         TCHAR buffer[64];
         RECT formattingRect;
 
+        if (GAMESTATE->debugMode)
+        {
+            int i;
+            for (i = 48; i < 90; i++)
+            {
+                if (i > 57 && i < 65)
+                {
+                    continue;
+                }
+                _stprintf(buffer, TEXT("%c"), i);
+                TextOut(bufferDC, (i + (12 * (i - 48 - (i > 64 ? 7 : 0)))) + 125, DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
+                _stprintf(buffer, TEXT("%d"), GAMESTATE->keys[i]);
+                TextOut(bufferDC, (i + (12 * (i - 48 - (i > 64 ? 7 : 0)))) + 125, DEFAULT_SCREEN_SIZE_Y - 30, buffer, _tcslen(buffer));
+            }
+
 #ifdef DEBUG
-        int i;
-        for (i = 48; i < 90; i++)
-        {
-            if (i > 57 && i < 65)
+            List *fighters;
+            ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
+
+            if (fighters->length > 0)
             {
-                continue;
+                if (((Entity *)(fighters->head->data))->colliding)
+                {
+                    TextOut(bufferDC, 36, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
+                }
+                else
+                {
+                    TextOut(bufferDC, 36, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
+                }
             }
-            _stprintf(buffer, TEXT("%c"), i);
-            TextOut(bufferDC, (i + (12 * (i - 48 - (i > 64 ? 7 : 0)))) + 125, DEFAULT_SCREEN_SIZE_Y - 10, buffer, _tcslen(buffer));
-            _stprintf(buffer, TEXT("%d"), GAMESTATE->keys[i]);
-            TextOut(bufferDC, (i + (12 * (i - 48 - (i > 64 ? 7 : 0)))) + 125, DEFAULT_SCREEN_SIZE_Y - 30, buffer, _tcslen(buffer));
-        }
 
-        List *fighters;
-        ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
-
-        if (fighters->length > 0)
-        {
-            if (((Entity *)(fighters->head->data))->colliding)
-            {
-                TextOut(bufferDC, 36, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter colliding"), _tcslen(TEXT("Fighter colliding")));
-            }
-            else
-            {
-                TextOut(bufferDC, 36, DEFAULT_SCREEN_SIZE_Y - 50, TEXT("Fighter not colliding"), _tcslen(TEXT("Fighter not colliding")));
-            }
-        }
-
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
-
-        formattingRect.right = 100;
-        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 70;
-        formattingRect.left = 36;
-        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 80;
-
-        _stprintf(buffer, TEXT("Mouse: (%d, %d)"), (int)GAMESTATE->mousePosition.x, (int)GAMESTATE->mousePosition.y);
-        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
-
-        formattingRect.right = 100;
-        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 25;
-        formattingRect.left = 36;
-        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 25;
-
-        _stprintf(buffer, TEXT("Tick: %lld"), GAMESTATE->tickCount);
-        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
-
-        formattingRect.right = 100;
-        formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 40;
-        formattingRect.left = 36;
-        formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 40;
-
-        _stprintf(buffer, TEXT("Tick time: %llu"), (GAMESTATE->lastTickTimeDifference.QuadPart / 10000));
-        DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
+            ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
 #endif
+
+            formattingRect.right = 100;
+            formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 70;
+            formattingRect.left = 36;
+            formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 80;
+
+            _stprintf(buffer, TEXT("Mouse: (%d, %d)"), (int)GAMESTATE->mousePosition.x, (int)GAMESTATE->mousePosition.y);
+            DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
+
+            formattingRect.right = 100;
+            formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 25;
+            formattingRect.left = 36;
+            formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 25;
+
+            _stprintf(buffer, TEXT("Tick: %lld"), GAMESTATE->tickCount);
+            DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
+
+            formattingRect.right = 100;
+            formattingRect.top = DEFAULT_SCREEN_SIZE_Y - 40;
+            formattingRect.left = 36;
+            formattingRect.bottom = DEFAULT_SCREEN_SIZE_Y - 40;
+
+            _stprintf(buffer, TEXT("Tick time: %llu"), (GAMESTATE->lastTickTimeDifference.QuadPart / 10000));
+            DrawText(bufferDC, buffer, _tcslen(buffer), &formattingRect, (DT_INTERNAL_FLAGS & (~DT_CENTER)) | DT_LEFT);
+        }
+
         if (!GAMESTATE->running)
         {
             formattingRect.right = DEFAULT_SCREEN_SIZE_X;
