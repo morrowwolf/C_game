@@ -388,6 +388,9 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
 #endif
 }
 
+// TODO: Need initiator function so we can get the highest velocity
+// and then divide up movement of every entity into the same number of subticks
+// Also, stop handling movement when dead
 void OnTickHandleMovement(Entity *entity)
 {
     if (fabs(entity->velocityThisTick.x) <= MINIMUM_FLOAT_DIFFERENCE && fabs(entity->velocityThisTick.y) <= MINIMUM_FLOAT_DIFFERENCE && fabs(entity->rotationVelocityThisTick) <= MINIMUM_FLOAT_DIFFERENCE)
