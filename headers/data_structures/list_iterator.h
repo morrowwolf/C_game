@@ -10,7 +10,6 @@ typedef struct
     ListElmt *currentListElement;
     unsigned int currentIteration;
 } ListIterator;
-// TODO: Transfer all ListElmt iterators to use this type instead
 
 void ListIterator_Init(ListIterator *, List *);
 
