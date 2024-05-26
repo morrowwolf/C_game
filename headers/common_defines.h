@@ -7,7 +7,7 @@
 
 #define _USE_MATH_DEFINES 1
 
-// #define DEBUG 1
+#define DEBUG 1
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -56,6 +56,15 @@ typedef struct
 
 typedef struct
 {
+// 10000ULL is 1 ms in 100ns intervals
+// 156250ULL is 64 ticks per second
+// Given we are going into subtick territory it may be best
+// to lower this to 32 ticks per second later
+#define DEFAULT_TICK_RATE 156250ULL
+    unsigned __int64 tickCount;
+    ULARGE_INTEGER nextTickTime;
+    ULARGE_INTEGER lastTickTimeDifference;
+
     unsigned short exiting; // If the overall process is ending
 
     RWL_List taskQueue; // list of Task

@@ -6,8 +6,6 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
     UNREFERENCED_PARAMETER(lpParam);
 
     HANDLE hTimer;
-    LARGE_INTEGER liDueTime;
-    liDueTime.QuadPart = -40000LL;
 
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 
@@ -26,11 +24,16 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
             // Possibly we could give it to task handler so we don't have to worry?
             // The overhead may not be worth it.
             WaitForSingleObject(GAMESTATE->keyEvent, INFINITE);
+
+            GAMESTATE->nextTickTime.QuadPart = 0;
         }
 
-        // TODO: Convert to absolute time, offset time taken to keep consistency
-        // Also, wait for gamestate tasks to finish
-        SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, 0);
+        FILETIME fileTime;
+        GetSystemTimeAsFileTime(&fileTime);
+
+        ULARGE_INTEGER startTime;
+        startTime.LowPart = fileTime.dwLowDateTime;
+        startTime.HighPart = fileTime.dwHighDateTime;
 
         List tasksToQueue;
         List_Init(&tasksToQueue, NULL);
@@ -101,7 +104,29 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         ReadWriteLock_ReleaseReadPermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
 
+        GetSystemTimeAsFileTime(&fileTime);
+
+        ULARGE_INTEGER endTime;
+        endTime.LowPart = fileTime.dwLowDateTime;
+        endTime.HighPart = fileTime.dwHighDateTime;
+
+        if (GAMESTATE->nextTickTime.QuadPart == 0)
+        {
+            GAMESTATE->nextTickTime.QuadPart = endTime.QuadPart;
+        }
+
+        GAMESTATE->lastTickTimeDifference.QuadPart = endTime.QuadPart - startTime.QuadPart;
+
+        GAMESTATE->nextTickTime.QuadPart += DEFAULT_TICK_RATE;
+
+        LARGE_INTEGER nextTickTime;
+        nextTickTime.QuadPart = (__int64)GAMESTATE->nextTickTime.QuadPart;
+
+        SetWaitableTimer(hTimer, &nextTickTime, 0, NULL, NULL, 0);
+
         WaitForSingleObject(hTimer, INFINITE);
+
+        GAMESTATE->tickCount++;
     }
 
     free(arrayOfTasksCompleteSyncEvents);

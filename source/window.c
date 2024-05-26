@@ -122,6 +122,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GAMESTATE->mousePosition.y = clientRect.bottom - GET_Y_LPARAM(lParam);
         return 0;
 
+    case WM_TIMECHANGE:
+        GAMESTATE->nextTickTime.QuadPart = 0;
+        return 0;
+
     case WM_PAINT:
 
 #ifdef CPU_GRAPHICS
