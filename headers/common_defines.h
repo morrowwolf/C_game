@@ -46,6 +46,8 @@
 #define SIGNOF(value) \
     ((value >= 0) ? 1 : -1)
 
+#define MINIMUM_FLOAT_DIFFERENCE 0.0000001
+
 typedef struct
 {
     double x;
@@ -58,7 +60,7 @@ typedef struct
 
     RWL_List taskQueue; // list of Task
 
-    unsigned long long runningEntityID;
+    volatile unsigned __int64 runningEntityID;
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1
     unsigned short running; // If the gamestate should be processing

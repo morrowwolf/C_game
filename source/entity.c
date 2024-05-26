@@ -23,21 +23,21 @@ void ZeroAndInitEntity(Entity **entity)
 
     (*entity)->entityNumber = GAMESTATE->runningEntityID;
     (*entity)->alive = ENTITY_ALIVE;
-    GAMESTATE->runningEntityID += 1;
+    InterlockedIncrement64((__int64 *)&GAMESTATE->runningEntityID);
 }
 
 void EntityDeath(Entity *entity)
 {
-    if (entity->alive == ENTITY_DEAD)
+    if (!InterlockedCompareExchange(&entity->alive, ENTITY_DEAD, ENTITY_ALIVE))
     {
         return;
     }
 
-    entity->alive = ENTITY_DEAD;
-
     List *deadEntities;
     ReadWriteLock_GetWritePermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
+
     List_Insert(deadEntities, entity);
+
     ReadWriteLock_ReleaseWritePermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
 }
 
@@ -242,9 +242,9 @@ void SetupRandomRotationSpeed(Entity *settingUpEntity)
     {
         RANDOMIZE(randomDouble);
 
-        settingUpEntity->rotationSpeed = fmod(randomDouble, MAX_RANDOM_ROTATION_SPEED);
+        settingUpEntity->rotationVelocity = fmod(randomDouble, MAX_RANDOM_ROTATION_SPEED);
 
-    } while ((settingUpEntity->rotationSpeed > -MIN_RANDOM_ROTATION_SPEED && settingUpEntity->rotationSpeed < MIN_RANDOM_ROTATION_SPEED) || isnan(settingUpEntity->rotationSpeed));
+    } while ((settingUpEntity->rotationVelocity > -MIN_RANDOM_ROTATION_SPEED && settingUpEntity->rotationVelocity < MIN_RANDOM_ROTATION_SPEED) || isnan(settingUpEntity->rotationVelocity));
 }
 #undef MIN_RANDOM_ROTATION_SPEED
 #undef MAX_RANDOM_ROTATION_SPEED
@@ -388,10 +388,38 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
 #endif
 }
 
-void OnTickCheckCollision(Entity *entity)
+void OnTickHandleMovement(Entity *entity)
+{
+    if (fabs(entity->velocityThisTick.x) <= MINIMUM_FLOAT_DIFFERENCE && fabs(entity->velocityThisTick.y) <= MINIMUM_FLOAT_DIFFERENCE && fabs(entity->rotationVelocityThisTick) <= MINIMUM_FLOAT_DIFFERENCE)
+    {
+        entity->velocityThisTick.x = entity->velocity.x;
+        entity->velocityThisTick.y = entity->velocity.y;
+        entity->rotationVelocityThisTick = entity->rotationVelocity;
+    }
+
+    HandleMovementVelocity(entity);
+    HandleMovementRotation(entity);
+    HandleMovementCollisionCheck(entity);
+
+    if (fabs(entity->velocityThisTick.x) > MINIMUM_FLOAT_DIFFERENCE || fabs(entity->velocityThisTick.y) > MINIMUM_FLOAT_DIFFERENCE || fabs(entity->rotationVelocityThisTick) > MINIMUM_FLOAT_DIFFERENCE)
+    {
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))OnTickHandleMovement;
+        task->taskArguments = entity;
+
+        List *taskQueue;
+        ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+
+        List_Insert(taskQueue, task);
+
+        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+    }
+}
+
+void HandleMovementCollisionCheck(Entity *entity)
 {
     List otherEntitiesPotentialCollision;
-    List_Init(&otherEntitiesPotentialCollision, List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove);
+    List_Init(&otherEntitiesPotentialCollision, List_DestroyCollisionDataHolderOnRemove);
 
     Point *referenceEntityLocation;
     ReadWriteLock_GetReadPermission(&entity->location, (void **)&referenceEntityLocation);
@@ -472,10 +500,10 @@ void OnTickCheckCollision(Entity *entity)
                 continue;
             }
 
-            OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder = calloc(1, sizeof(OnTickCheckCollisionOtherEntityDataHolder));
-            OnTickCheckCollisionOtherEntityDataHolder_Init(onTickCheckCollisionOtherEntityDataHolder, otherEntity, referenceOtherEntityLocation, ((ReadWriteLock_PermissionRequest *)(permissionRequests.tail->data))->returnedData);
+            CollisionDataHolder *collisionDataHolder = calloc(1, sizeof(CollisionDataHolder));
+            CheckCollisionDataHolder_Init(collisionDataHolder, otherEntity, referenceOtherEntityLocation, ((ReadWriteLock_PermissionRequest *)(permissionRequests.tail->data))->returnedData);
 
-            List_Insert(&otherEntitiesPotentialCollision, onTickCheckCollisionOtherEntityDataHolder);
+            List_Insert(&otherEntitiesPotentialCollision, collisionDataHolder);
             List_Clear(&permissionRequests);
         }
     }
@@ -499,7 +527,7 @@ void OnTickCheckCollision(Entity *entity)
 
     ListIterator otherEntitiesPotentialCollisionIterator;
     ListIterator_Init(&otherEntitiesPotentialCollisionIterator, &otherEntitiesPotentialCollision);
-    OnTickCheckCollisionOtherEntityDataHolder *otherEntityDataHolder;
+    CollisionDataHolder *otherEntityDataHolder;
     while (ListIterator_Next(&otherEntitiesPotentialCollisionIterator, (void **)&otherEntityDataHolder))
     {
 
@@ -643,14 +671,14 @@ void OnTickCheckCollision(Entity *entity)
     List_Clear(&entitiesColliding);
 }
 
-void OnTickCheckCollisionOtherEntityDataHolder_Init(OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder, Entity *entity, Point *location, List *verticesList)
+void CheckCollisionDataHolder_Init(CollisionDataHolder *collisionDataHolder, Entity *entity, Point *location, List *verticesList)
 {
-    onTickCheckCollisionOtherEntityDataHolder->entity = entity;
+    collisionDataHolder->entity = entity;
 
-    onTickCheckCollisionOtherEntityDataHolder->location.x = location->x;
-    onTickCheckCollisionOtherEntityDataHolder->location.y = location->y;
+    collisionDataHolder->location.x = location->x;
+    collisionDataHolder->location.y = location->y;
 
-    List_Init(&onTickCheckCollisionOtherEntityDataHolder->vertices, List_FreeOnRemove);
+    List_Init(&collisionDataHolder->vertices, List_FreeOnRemove);
 
     ListIterator verticesListIterator;
     ListIterator_Init(&verticesListIterator, verticesList);
@@ -661,19 +689,19 @@ void OnTickCheckCollisionOtherEntityDataHolder_Init(OnTickCheckCollisionOtherEnt
         copiedVertex->x = referenceVertex->x;
         copiedVertex->y = referenceVertex->y;
 
-        List_Insert(&onTickCheckCollisionOtherEntityDataHolder->vertices, copiedVertex);
+        List_Insert(&collisionDataHolder->vertices, copiedVertex);
     }
 }
 
-void OnTickCheckCollisionOtherEntityDataHolder_Destroy(OnTickCheckCollisionOtherEntityDataHolder *onTickCheckCollisionOtherEntityDataHolder)
+void CheckCollisionDataHolder_Destroy(CollisionDataHolder *collisionDataHolder)
 {
-    List_Clear(&onTickCheckCollisionOtherEntityDataHolder->vertices);
-    free(onTickCheckCollisionOtherEntityDataHolder);
+    List_Clear(&collisionDataHolder->vertices);
+    free(collisionDataHolder);
 }
 
-void List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove(void *data)
+void List_DestroyCollisionDataHolderOnRemove(void *data)
 {
-    OnTickCheckCollisionOtherEntityDataHolder_Destroy(data);
+    CheckCollisionDataHolder_Destroy(data);
 }
 
 /// @brief Checks if a number is in between two other numbers. Markers can be in either order.
@@ -695,14 +723,26 @@ int IsInBetween(double primary, double firstMarker, double secondMarker)
     return 1;
 }
 
-void OnTickRotation(Entity *entity)
+#define MAX_ROTATION_PER_SUBTICK ((2.0 * M_PI) / 10.0)
+void HandleMovementRotation(Entity *entity)
 {
-    if (entity->rotationSpeed == 0.0)
+    if (fabs(entity->rotationVelocity) <= MINIMUM_FLOAT_DIFFERENCE || fabs(entity->rotationVelocityThisTick) <= MINIMUM_FLOAT_DIFFERENCE)
     {
+        entity->rotationVelocityThisTick = 0.0;
         return;
     }
 
-    entity->rotation += entity->rotationSpeed;
+    int sign = SIGNOF(entity->rotationVelocityThisTick);
+    double rotationThisSubTick = min(fabs(entity->rotationVelocityThisTick), MAX_ROTATION_PER_SUBTICK) * sign;
+
+    entity->rotationVelocityThisTick -= rotationThisSubTick;
+
+    if (fabs(entity->rotationVelocityThisTick) <= MINIMUM_FLOAT_DIFFERENCE)
+    {
+        entity->rotationVelocityThisTick = 0.0;
+    }
+
+    entity->rotation += rotationThisSubTick;
 
     while (entity->rotation < 0.0)
     {
@@ -716,15 +756,49 @@ void OnTickRotation(Entity *entity)
 
     CalculateAndSetRotationOffsetVertices(entity);
 }
+#undef MAX_ROTATION_PER_SUBTICK
 
-void OnTickVelocity(Entity *entity)
+#define MAX_VELOCITY_PER_SUBTICK 2.0
+void HandleMovementVelocity(Entity *entity)
 {
 
     Point *entityLocation;
     ReadWriteLock_GetWritePermission(&entity->location, (void **)&entityLocation);
 
-    entityLocation->x += entity->velocity.x;
-    entityLocation->y += entity->velocity.y;
+    if ((fabs(entity->velocity.x) <= MINIMUM_FLOAT_DIFFERENCE &&
+         fabs(entity->velocity.y) <= MINIMUM_FLOAT_DIFFERENCE) ||
+        (fabs(entity->velocityThisTick.x) <= MINIMUM_FLOAT_DIFFERENCE &&
+         fabs(entity->velocityThisTick.y) <= MINIMUM_FLOAT_DIFFERENCE))
+    {
+        entity->velocityThisTick.x = 0.0;
+        entity->velocityThisTick.y = 0.0;
+        ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&entityLocation);
+        return;
+    }
+
+    double tempAngle = atan2(entity->velocityThisTick.y, entity->velocityThisTick.x);
+
+    int signX = SIGNOF(entity->velocityThisTick.x);
+    int signY = SIGNOF(entity->velocityThisTick.y);
+
+    double velocityXThisSubTick = min(fabs(MAX_VELOCITY_PER_SUBTICK * cos(tempAngle)), fabs(entity->velocityThisTick.x)) * signX;
+    double velocityYThisSubTick = min(fabs(MAX_VELOCITY_PER_SUBTICK * sin(tempAngle)), fabs(entity->velocityThisTick.y)) * signY;
+
+    entity->velocityThisTick.x -= velocityXThisSubTick;
+    entity->velocityThisTick.y -= velocityYThisSubTick;
+
+    if (fabs(entity->velocityThisTick.x) < MINIMUM_FLOAT_DIFFERENCE)
+    {
+        entity->velocityThisTick.x = 0.0;
+    }
+
+    if (fabs(entity->velocityThisTick.y) < MINIMUM_FLOAT_DIFFERENCE)
+    {
+        entity->velocityThisTick.y = 0.0;
+    }
+
+    entityLocation->x += velocityXThisSubTick;
+    entityLocation->y += velocityYThisSubTick;
 
     if (entityLocation->x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
     {
@@ -746,6 +820,7 @@ void OnTickVelocity(Entity *entity)
 
     ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&entityLocation);
 }
+#undef MAX_VELOCITY_PER_SUBTICK
 #undef EXTRA_OFFSCREEN_LOCATION_SPACE
 
 void List_DestroyEntityOnRemove(void *data)

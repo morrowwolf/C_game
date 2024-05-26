@@ -16,9 +16,7 @@ void SpawnAsteroid()
 
     settingUpEntity->onDestroy = AsteroidDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
-    List_Insert(&settingUpEntity->onTick, OnTickRotation);
-    List_Insert(&settingUpEntity->onTick, OnTickVelocity);
+    List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
 
     List *asteroids;
     ReadWriteLock_GetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);

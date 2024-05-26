@@ -15,12 +15,10 @@ void SpawnPlayerFighter()
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
     settingUpEntity->onDestroy = FighterDestroy;
     List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
-    List_Insert(&settingUpEntity->onTick, OnTickCheckCollision);
+    List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
     List_Insert(&settingUpEntity->onTick, OnTickReduceFireDelay);
     List_Insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
     List_Insert(&settingUpEntity->onTick, OnTickKeyFireBullet);
-    List_Insert(&settingUpEntity->onTick, OnTickRotation);
-    List_Insert(&settingUpEntity->onTick, OnTickVelocity);
 
     List *fighters;
     ReadWriteLock_GetWritePermission(&GAMESTATE->fighters, (void **)&fighters);
@@ -162,20 +160,20 @@ void OnTickKeyAcceleration(Entity *entity)
 
     if (GAMESTATE->keys['A'])
     {
-        entity->rotationSpeed = +ROTATION_ACCELERATION;
+        entity->rotationVelocity = +ROTATION_ACCELERATION;
     }
 
     if (GAMESTATE->keys['D'])
     {
-        entity->rotationSpeed = -ROTATION_ACCELERATION;
+        entity->rotationVelocity = -ROTATION_ACCELERATION;
     }
 
     if (!GAMESTATE->keys['A'] && !GAMESTATE->keys['D'])
     {
-        entity->rotationSpeed -= ROTATION_ACCELERATION * SIGNOF(entity->rotationSpeed);
-        if (fabs(entity->rotationSpeed) <= ROTATION_ACCELERATION)
+        entity->rotationVelocity -= ROTATION_ACCELERATION * SIGNOF(entity->rotationVelocity);
+        if (fabs(entity->rotationVelocity) <= ROTATION_ACCELERATION)
         {
-            entity->rotationSpeed = 0.0;
+            entity->rotationVelocity = 0.0;
         }
     }
 }

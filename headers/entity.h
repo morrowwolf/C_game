@@ -3,6 +3,7 @@
 #define ENTITY_H_
 
 #include "common_defines.h"
+#include "tasks.h"
 
 struct EntityInternal;
 
@@ -13,11 +14,13 @@ struct EntityInternal
     unsigned long long entityNumber;
 #define ENTITY_ALIVE 1
 #define ENTITY_DEAD 0
-    short alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead
+    volatile long alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead
     RWL_Point location;
     Vector velocity;
+    Vector velocityThisTick;
     double rotation;
-    double rotationSpeed;
+    double rotationVelocity;
+    double rotationVelocityThisTick;
     double radius;
 
     int lifetime;
@@ -62,22 +65,24 @@ void OnCollisionDeath(Entity *, Entity *);
 
 void OnDrawVertexLines(Entity *, HDC *);
 
-void OnTickCheckCollision(Entity *);
+void OnTickHandleMovement(Entity *);
+
+void HandleMovementCollisionCheck(Entity *);
 typedef struct
 {
     Entity *entity;
     Point location;
     List vertices;
-} OnTickCheckCollisionOtherEntityDataHolder;
+} CollisionDataHolder;
 
-void OnTickCheckCollisionOtherEntityDataHolder_Init(OnTickCheckCollisionOtherEntityDataHolder *, Entity *, Point *, List *);
-void OnTickCheckCollisionOtherEntityDataHolder_Destroy(OnTickCheckCollisionOtherEntityDataHolder *);
-void List_DestroyOnTickCheckCollisionOtherEntityDataHolderOnRemove(void *);
+void CheckCollisionDataHolder_Init(CollisionDataHolder *, Entity *, Point *, List *);
+void CheckCollisionDataHolder_Destroy(CollisionDataHolder *);
+void List_DestroyCollisionDataHolderOnRemove(void *);
 int IsInBetween(double, double, double);
 
-void OnTickRotation(Entity *);
+void HandleMovementRotation(Entity *);
 
-void OnTickVelocity(Entity *);
+void HandleMovementVelocity(Entity *);
 
 void List_DestroyEntityOnRemove(void *);
 #endif
