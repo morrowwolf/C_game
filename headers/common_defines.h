@@ -7,7 +7,7 @@
 
 #define _USE_MATH_DEFINES 1
 
-#define DEBUG 1
+// #define DEBUG 1
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
