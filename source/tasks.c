@@ -41,6 +41,8 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
         free(task);
     }
 
+    SetEvent(tasksCompleteEvent);
+
     return 0;
 }
 
