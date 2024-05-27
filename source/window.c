@@ -142,8 +142,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_PAINT:
-
-#ifdef CPU_GRAPHICS
         HDC hdc;
         PAINTSTRUCT ps;
 
@@ -152,8 +150,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         WndProcHandlePaint(hWnd, hdc);
 
         EndPaint(hWnd, &ps);
+
         return 0;
-#endif
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -161,6 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void WndProcHandlePaint(HWND hWnd, HDC hdc)
 {
+#ifdef CPU_GRAPHICS
     RECT clientRect;
 
     GetClientRect(hWnd, &clientRect);
@@ -193,6 +192,7 @@ void WndProcHandlePaint(HWND hWnd, HDC hdc)
 
         SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
     }
+#endif
 }
 
 void HandleNonGameKeys(UINT_PTR keyCode)

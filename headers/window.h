@@ -19,11 +19,13 @@ typedef struct
 #define DEFAULT_FRAME_REFRESH_RATE 39063ULL
     ULARGE_INTEGER nextFrameRefreshTime;
 
+#ifdef CPU_GRAPHICS
     unsigned short currentBufferUsed;
 
     HANDLE bufferDrawingMutexes[BUFFER_THREAD_COUNT];
     HANDLE bufferRedrawSemaphores[BUFFER_THREAD_COUNT];
     HDC bufferMemDCs[BUFFER_THREAD_COUNT];
+#endif
 } Screen;
 
 extern Screen *SCREEN;

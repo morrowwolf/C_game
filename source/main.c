@@ -29,14 +29,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Init(&threadHandles, NULL);
 	HANDLE threadHandle;
 
-#ifdef CPU_GRAPHICS
-
 	SCREEN = calloc(1, sizeof(Screen));
 
 	SCREEN->windowHandleInitializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-	unsigned int i;
-	for (i = 0; i < BUFFER_THREAD_COUNT; i++)
+#ifdef CPU_GRAPHICS
+
+	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
 	{
 		SCREEN->bufferDrawingMutexes[i] = CreateMutex(NULL, FALSE, NULL);
 		SCREEN->bufferRedrawSemaphores[i] = CreateSemaphore(NULL, 0, 1, NULL);
@@ -62,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 
-	for (i = 0; i < (systemInfo.dwNumberOfProcessors - BUFFER_THREAD_COUNT - 1); i++)
+	for (unsigned int i = 0; i < (systemInfo.dwNumberOfProcessors - BUFFER_THREAD_COUNT - 1); i++)
 	{
 		List_Insert(&TASKSTATE->tasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
 		List_Insert(&TASKSTATE->tasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));

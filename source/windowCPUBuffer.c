@@ -1,6 +1,8 @@
 
 #include "../headers/windowCPUBuffer.h"
 
+#ifdef CPU_GRAPHICS
+
 DWORD WINAPI BufferHandler(LPVOID lpParam)
 {
     BufferArgs *bufferArgs = (BufferArgs *)lpParam;
@@ -151,3 +153,5 @@ DWORD WINAPI BufferHandler(LPVOID lpParam)
     DeleteDC(bufferDC);
     return 0;
 }
+
+#endif
