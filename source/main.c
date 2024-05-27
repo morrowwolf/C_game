@@ -35,8 +35,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	SCREEN->windowHandleInitializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-	SCREEN->currentBufferUsed = 0;
-
 	unsigned int i;
 	for (i = 0; i < BUFFER_THREAD_COUNT; i++)
 	{

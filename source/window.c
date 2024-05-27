@@ -66,6 +66,18 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
             {
                 InvalidateRect(hWnd, NULL, FALSE);
                 UpdateWindow(hWnd);
+
+                if (SCREEN->nextFrameRefreshTime.QuadPart == 0)
+                {
+                    FILETIME currentTime;
+                    GetSystemTimeAsFileTime(&currentTime);
+                    SCREEN->nextFrameRefreshTime.LowPart = currentTime.dwLowDateTime;
+                    SCREEN->nextFrameRefreshTime.HighPart = currentTime.dwHighDateTime;
+                }
+
+                SCREEN->nextFrameRefreshTime.QuadPart += DEFAULT_FRAME_REFRESH_RATE;
+                updateWindowTimerTime.QuadPart = (__int64)SCREEN->nextFrameRefreshTime.QuadPart;
+
                 SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
             }
 
@@ -126,6 +138,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_TIMECHANGE:
         GAMESTATE->nextTickTime.QuadPart = 0;
+        SCREEN->nextFrameRefreshTime.QuadPart = 0;
         return 0;
 
     case WM_PAINT:

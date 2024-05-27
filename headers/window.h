@@ -14,6 +14,11 @@ typedef struct
 {
     HWND windowHandle;
     HANDLE windowHandleInitializedEvent;
+
+    // About 256 frames per second, exact 256 frames would be 390625ULL
+#define DEFAULT_FRAME_REFRESH_RATE 39063ULL
+    ULARGE_INTEGER nextFrameRefreshTime;
+
     unsigned short currentBufferUsed;
 
     HANDLE bufferDrawingMutexes[BUFFER_THREAD_COUNT];
