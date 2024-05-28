@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29.2)
-project(C_game VERSION 0.1.0 LANGUAGES C)
+project(C_game VERSION 0.1.0 LANGUAGES C CXX)
 
 include(CTest)
 enable_testing()
@@ -8,8 +8,12 @@ enable_testing()
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi")
 #set ASAN_SAVE_DUMPS=”MyFileName.dmpx” https://devblogs.microsoft.com/cppblog/asan-for-windows-x64-and-debug-build-support/
 
+#tracy stuff
+#add_definitions(-DTRACY_ENABLE)
+#set(INCLUDED_FILES ${INCLUDED_FILES} tracy-0.10/public/TracyClient.cpp)
 
-set(INCLUDED_FILES  source/main.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/main.c)
+
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list_iterator.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/read_write_lock.c)
