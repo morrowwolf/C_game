@@ -1,8 +1,6 @@
 
 #include "../headers/window.h"
 
-Screen *SCREEN;
-
 int WindowHandler(HINSTANCE hInstance, int iCmdShow)
 {
     TCHAR szAppName[] = TEXT("C Game");
@@ -33,7 +31,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
     hUpdateWindowTimer = CreateWaitableTimer(NULL, TRUE, NULL);
     SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
 
-    long windowStyleFlags = WS_OVERLAPPEDWINDOW; // TODO: Kill free resize when we make menu
+    long windowStyleFlags = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
 
     RECT windowRect;
     windowRect.left = 0;
@@ -46,13 +44,11 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
                                         CW_USEDEFAULT, CW_USEDEFAULT, windowRect.right - windowRect.left,
                                         windowRect.bottom - windowRect.top, NULL, NULL, hInstance, NULL);
 
-    SetEvent(SCREEN->windowHandleInitializedEvent);
-
-    HWND hWnd = SCREEN->windowHandle;
+    DX_Init();
 
     ShowCursor(FALSE);
-    ShowWindow(hWnd, iCmdShow);
-    UpdateWindow(hWnd);
+    ShowWindow(SCREEN->windowHandle, iCmdShow);
+    UpdateWindow(SCREEN->windowHandle);
 
     short lastMessage = TRUE;
     MSG msg;
@@ -64,8 +60,8 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                InvalidateRect(hWnd, NULL, FALSE);
-                UpdateWindow(hWnd);
+                InvalidateRect(SCREEN->windowHandle, NULL, FALSE);
+                UpdateWindow(SCREEN->windowHandle);
 
                 if (SCREEN->nextFrameRefreshTime.QuadPart == 0)
                 {
@@ -159,40 +155,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void WndProcHandlePaint(HWND hWnd, HDC hdc)
 {
-#ifdef CPU_GRAPHICS
-    RECT clientRect;
-
-    GetClientRect(hWnd, &clientRect);
-
-    SetMapMode(hdc, MM_ANISOTROPIC);
-    SetWindowExtEx(hdc, DEFAULT_SCREEN_SIZE_X, DEFAULT_SCREEN_SIZE_Y, NULL);
-    SetViewportExtEx(hdc, clientRect.right, -clientRect.bottom, NULL);
-    SetViewportOrgEx(hdc, 0, clientRect.bottom, NULL);
-
-    int i;
-
-    for (i = 0; i < BUFFER_THREAD_COUNT; i++)
-    {
-        if (WaitForSingleObject(
-                SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed], 0) == WAIT_OBJECT_0)
-        {
-
-            BitBlt(hdc, 0, 0,
-                   DEFAULT_SCREEN_SIZE_X,
-                   DEFAULT_SCREEN_SIZE_Y,
-                   SCREEN->bufferMemDCs[SCREEN->currentBufferUsed],
-                   0, 0, SRCCOPY);
-
-            ReleaseMutex(SCREEN->bufferDrawingMutexes[SCREEN->currentBufferUsed]);
-            ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[SCREEN->currentBufferUsed], 1, NULL);
-
-            SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
-            break;
-        }
-
-        SCREEN->currentBufferUsed = (SCREEN->currentBufferUsed + 1) % BUFFER_THREAD_COUNT;
-    }
-#endif
 }
 
 void HandleNonGameKeys(UINT_PTR keyCode)

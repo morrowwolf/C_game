@@ -2,7 +2,6 @@
 #ifndef FIGHTER_H_
 #define FIGHTER_H_
 
-#include "../common_defines.h"
 #include "../entity.h"
 #include "bullet.h"
 

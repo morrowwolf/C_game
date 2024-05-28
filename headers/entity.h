@@ -2,7 +2,7 @@
 #ifndef ENTITY_H_
 #define ENTITY_H_
 
-#include "common_defines.h"
+#include "globals.h"
 #include "tasks.h"
 
 struct EntityInternal;

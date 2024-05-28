@@ -2,7 +2,6 @@
 #ifndef ASTEROID_H_
 #define ASTEROID_H_
 
-#include "../common_defines.h"
 #include "../entity.h"
 
 void SpawnAsteroid();

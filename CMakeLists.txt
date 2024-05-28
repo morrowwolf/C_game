@@ -21,7 +21,6 @@ set(INCLUDED_FILES ${INCLUDED_FILES} source/gamestate.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/graphics/GPUHandler.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/tasks.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/window.c)
-set(INCLUDED_FILES ${INCLUDED_FILES} source/windowCPUBuffer.c)
 
 add_executable(C_game WIN32 ${INCLUDED_FILES})
 

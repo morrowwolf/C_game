@@ -1,3 +1,4 @@
 
-#include <windows.h>
-#include <d3d12.h>
+#include "../globals.h"
+
+void DX_Init();

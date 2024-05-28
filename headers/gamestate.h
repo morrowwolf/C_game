@@ -2,7 +2,7 @@
 #ifndef GAMESTATE_H_
 #define GAMESTATE_H_
 
-#include "common_defines.h"
+#include "globals.h"
 #include "entity.h"
 #include "entity/asteroid.h"
 #include "entity/fighter.h"

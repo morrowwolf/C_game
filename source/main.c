@@ -31,24 +31,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	SCREEN = calloc(1, sizeof(Screen));
 
-	SCREEN->windowHandleInitializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-#ifdef CPU_GRAPHICS
-
-	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		SCREEN->bufferDrawingMutexes[i] = CreateMutex(NULL, FALSE, NULL);
-		SCREEN->bufferRedrawSemaphores[i] = CreateSemaphore(NULL, 0, 1, NULL);
-
-		// Freed by the handler
-		BufferArgs *bufferArgs = malloc(sizeof(BufferArgs));
-		bufferArgs->bufferId = i;
-		threadHandle = CreateThread(NULL, 0, BufferHandler, bufferArgs, 0, NULL);
-		List_Insert(&threadHandles, threadHandle);
-	}
-
-#endif
-
 	TASKSTATE = calloc(1, sizeof(TaskState));
 
 	List *taskQueue = malloc(sizeof(List));
@@ -88,15 +70,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		SetEvent(tasksQueuedSyncEvent);
 	}
 
-#ifdef CPU_GRAPHICS
-
-	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[i], 1, NULL);
-	}
-
-#endif
-
 	void *arrayOfThreadHandles;
 	List_GetAsArray(&threadHandles, &arrayOfThreadHandles);
 
@@ -115,17 +88,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	free(TASKSTATE);
 
-#ifdef CPU_GRAPHICS
-
-	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		CloseHandle(SCREEN->bufferRedrawSemaphores[i]);
-		CloseHandle(SCREEN->bufferDrawingMutexes[i]);
-	}
-
 	free(SCREEN);
-
-#endif
 
 	// All threads should be done at this point so we're just cleaning up.
 	ListIterator entitiesIterator;

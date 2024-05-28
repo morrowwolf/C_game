@@ -1,23 +1,17 @@
 #pragma once
-#ifndef HELPER_H_
-#define HELPER_H_
+#ifndef GLOBALS_H_
+#define GLOBALS_H_
 
-#define UNICODE 1
-#define _UNICODE 1
+// #define DEBUG
 
-#define _USE_MATH_DEFINES 1
+#define _USE_MATH_DEFINES
 
-// #define DEBUG 1
-
-// https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
-#ifdef DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-#endif
+#define UNICODE
+#define _UNICODE
 
 #include <Windows.h>
 #include <windowsx.h>
+#include <d3d12.h>
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -25,9 +19,19 @@
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
 
-#pragma comment(lib, "bcrypt.lib")
+// https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
+#ifdef DEBUG
+#define _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
 
-#define CPU_GRAPHICS 1
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+
+#pragma comment(lib, "bcrypt.lib")
 
 #define MAX_ASTEROIDS 128
 #define MAX_FIGHTERS 1
@@ -98,5 +102,30 @@ typedef struct
 } TaskState;
 
 TaskState *TASKSTATE;
+
+typedef struct
+{
+    HWND windowHandle;
+
+    WCHAR assetsPath[512];
+
+    float aspectRatio;
+    unsigned int screenWidth;
+    unsigned int screenHeight;
+
+    D3D12_VIEWPORT viewport;
+    D3D12_RECT scissorRect;
+
+    unsigned int rtvDescriptorSize;
+
+    unsigned int frameIndex;
+
+    // About 256 frames per second, exact 256 frames would be 390625ULL
+#define DEFAULT_FRAME_REFRESH_RATE 39063ULL
+    ULARGE_INTEGER nextFrameRefreshTime;
+
+} Screen;
+
+Screen *SCREEN;
 
 #endif
