@@ -2,7 +2,7 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-// #define DEBUG
+#define DEBUG
 
 #define _USE_MATH_DEFINES
 
@@ -11,13 +11,16 @@
 
 #include <Windows.h>
 #include <windowsx.h>
+#include <winerror.h>
 #include <d3d12.h>
+#include <dxgi1_6.h>
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
+#include "helpers.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -27,11 +30,11 @@
 #include <crtdbg.h>
 #endif
 
+#pragma comment(lib, "bcrypt.lib")
+
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-
-#pragma comment(lib, "bcrypt.lib")
 
 #define MAX_ASTEROIDS 128
 #define MAX_FIGHTERS 1

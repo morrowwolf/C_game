@@ -3,7 +3,7 @@
 #define WINDOW_H_
 
 #include "globals.h"
-#include "graphics/GPUHandler.h"
+#include "graphics/GPU_handler.h"
 
 int WindowHandler(HINSTANCE hInstance, int iCmdShow);
 
