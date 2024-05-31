@@ -5,10 +5,6 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-
 typedef struct IDXGIFactory1 IDXGIFactory1;
 typedef struct IDXGIAdapter1 IDXGIAdapter1;
 typedef struct IDXGISwapChain3 IDXGISwapChain3;

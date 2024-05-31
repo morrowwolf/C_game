@@ -9,6 +9,7 @@
 #define UNICODE
 #define _UNICODE
 
+#include "helpers.h"
 #include <Windows.h>
 #include <windowsx.h>
 #include <winerror.h>
@@ -20,11 +21,9 @@
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
-#include "helpers.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
-#define _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
@@ -35,12 +34,12 @@
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dxguid.lib")
 
 #define MAX_ASTEROIDS 128
 #define MAX_FIGHTERS 1
 #define DEFAULT_SCREEN_SIZE_X 1600
 #define DEFAULT_SCREEN_SIZE_Y 900
-#define BUFFER_THREAD_COUNT 1
 
 #define DT_INTERNAL_FLAGS (DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP)
 
@@ -52,6 +51,26 @@
 
 #define SIGNOF(value) \
     ((value >= 0) ? 1 : -1)
+
+#define HRESULT_EXIT_IF_FAILED(result)                                                              \
+    if (FAILED(result))                                                                             \
+    {                                                                                               \
+        TCHAR buffer[256];                                                                          \
+        _stprintf(buffer, TEXT("Failure at %s:%d.\nHRESULT: 0x%08X."), __FILE__, __LINE__, result); \
+        OutputDebugString(buffer);                                                                  \
+        MessageBox(SCREEN->windowHandle, buffer, NULL, MB_OK);                                      \
+        exit(EXIT_FAILURE);                                                                         \
+    }
+
+#define NULL_EXIT_IF_FAILED(result)                                                                       \
+    if (result == NULL)                                                                                   \
+    {                                                                                                     \
+        TCHAR buffer[256];                                                                                \
+        _stprintf(buffer, TEXT("Failure at %s:%d.\nERROR: 0x%08X."), __FILE__, __LINE__, GetLastError()); \
+        OutputDebugString(buffer);                                                                        \
+        MessageBox(SCREEN->windowHandle, buffer, NULL, MB_OK);                                            \
+        exit(EXIT_FAILURE);                                                                               \
+    }
 
 #define MINIMUM_FLOAT_DIFFERENCE 0.0000001
 
@@ -115,6 +134,11 @@ typedef struct
     float aspectRatio;
     unsigned int screenWidth;
     unsigned int screenHeight;
+
+    ID3D12Device *device;
+    IDXGISwapChain3 *swapChain;
+
+    ID3D12CommandQueue *commandQueue;
 
     D3D12_VIEWPORT viewport;
     D3D12_RECT scissorRect;

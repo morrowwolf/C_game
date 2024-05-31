@@ -155,6 +155,8 @@ void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock, void **pr
 #endif
 }
 
+// TODO: This should just use a pointer to an array of PermissionRequests and the size
+//  Using a list here is overhead that is not required
 short ReadWriteLock_GetMultiplePermissions(List *listOfPermissions, unsigned int timeout)
 {
     ListIterator listOfPermissionsIterator;

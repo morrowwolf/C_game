@@ -12,6 +12,8 @@ enable_testing()
 #add_definitions(-DTRACY_ENABLE)
 #set(INCLUDED_FILES ${INCLUDED_FILES} tracy-0.10/public/TracyClient.cpp)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:clatest")
+
 set(INCLUDED_FILES ${INCLUDED_FILES} source/main.c)
 
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
@@ -23,6 +25,7 @@ set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/bullet.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/fighter.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/gamestate.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/graphics/GPU_handler.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/helpers.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/tasks.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/window.c)
 

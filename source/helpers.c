@@ -1,17 +1,7 @@
 
 #include "../headers/helpers.h"
 
-void ExitIfFailed(const HRESULT hr)
-{
-    if (FAILED(hr))
-    {
-        TCHAR buffer[64];
-        _stprintf(buffer, TEXT("ERROR: HRESULT 0x%08X\n"), (UINT)hr);
-        OutputDebugString(buffer);
-        exit(EXIT_FAILURE);
-    }
-}
-
+// TODO: Kill this as soon as possible
 void GetCurrentPath(_Out_writes_(pathSize) WCHAR *const path, UINT pathSize)
 {
     if (path == NULL)
