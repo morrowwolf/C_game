@@ -419,6 +419,9 @@ void OnTickHandleMovement(Entity *entity)
     }
 }
 
+#define COLLISION_PERMISSION_REQUEST_SIZE 2
+#define COLLISION_PERMISSION_REQUEST_TIMEOUT 5
+
 void HandleMovementCollisionCheck(Entity *entity)
 {
     List otherEntitiesPotentialCollision;
@@ -465,50 +468,37 @@ void HandleMovementCollisionCheck(Entity *entity)
         {
             continue;
         }
-        else
+
+        ReadWriteLock_PermissionRequest permissionRequests[COLLISION_PERMISSION_REQUEST_SIZE] = {
+            {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->location, .returnedData = NULL},
+            {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->rotationOffsetVertices, .returnedData = NULL}};
+
+        while (!ReadWriteLock_GetMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE, COLLISION_PERMISSION_REQUEST_TIMEOUT))
         {
-            List permissionRequests;
-            List_Init(&permissionRequests, List_DestroyReadWriteLockPermissionRequestOnRemove);
-
-            ReadWriteLock_PermissionRequest *otherEntityLocationPermissionRequest = calloc(1, sizeof(ReadWriteLock_PermissionRequest));
-            otherEntityLocationPermissionRequest->readWriteLock = &otherEntity->location;
-            otherEntityLocationPermissionRequest->permissionType = ReadWriteLock_Read;
-
-            List_Insert(&permissionRequests, otherEntityLocationPermissionRequest);
-
-            ReadWriteLock_PermissionRequest *otherEntityVerticesPermissionRequest = calloc(1, sizeof(ReadWriteLock_PermissionRequest));
-            otherEntityVerticesPermissionRequest->readWriteLock = &otherEntity->rotationOffsetVertices;
-            otherEntityVerticesPermissionRequest->permissionType = ReadWriteLock_Read;
-
-            List_Insert(&permissionRequests, otherEntityVerticesPermissionRequest);
-
-            while (!ReadWriteLock_GetMultiplePermissions(&permissionRequests, 5))
+            if (GAMESTATE->exiting)
             {
-                if (GAMESTATE->exiting)
-                {
-                    List_Clear(&entityRotationOffsetVertices);
-                    List_Clear(&otherEntitiesPotentialCollision);
-                    List_Clear(&permissionRequests);
-                    return;
-                }
+                List_Clear(&entityRotationOffsetVertices);
+                List_Clear(&otherEntitiesPotentialCollision);
+                return;
             }
-
-            Point *referenceOtherEntityLocation = ((ReadWriteLock_PermissionRequest *)(permissionRequests.head->data))->returnedData;
-            double otherEntityDistance = max(fabs(referenceOtherEntityLocation->x - entityLocation.x),
-                                             fabs(referenceOtherEntityLocation->y - entityLocation.y));
-
-            if (otherEntityDistance > (entity->radius + otherEntity->radius))
-            {
-                List_Clear(&permissionRequests);
-                continue;
-            }
-
-            CollisionDataHolder *collisionDataHolder = calloc(1, sizeof(CollisionDataHolder));
-            CheckCollisionDataHolder_Init(collisionDataHolder, otherEntity, referenceOtherEntityLocation, ((ReadWriteLock_PermissionRequest *)(permissionRequests.tail->data))->returnedData);
-
-            List_Insert(&otherEntitiesPotentialCollision, collisionDataHolder);
-            List_Clear(&permissionRequests);
         }
+
+        Point *referenceOtherEntityLocation = permissionRequests[0].returnedData;
+        double otherEntityDistance = max(fabs(referenceOtherEntityLocation->x - entityLocation.x),
+                                         fabs(referenceOtherEntityLocation->y - entityLocation.y));
+
+        if (otherEntityDistance > (entity->radius + otherEntity->radius))
+        {
+            ReadWriteLock_ReleaseMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE);
+            continue;
+        }
+
+        CollisionDataHolder *collisionDataHolder = calloc(1, sizeof(CollisionDataHolder));
+        CheckCollisionDataHolder_Init(collisionDataHolder, otherEntity, referenceOtherEntityLocation, permissionRequests[1].returnedData);
+
+        List_Insert(&otherEntitiesPotentialCollision, collisionDataHolder);
+
+        ReadWriteLock_ReleaseMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE);
     }
 
     ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
@@ -673,6 +663,9 @@ void HandleMovementCollisionCheck(Entity *entity)
     List_Clear(&otherEntitiesPotentialCollision);
     List_Clear(&entitiesColliding);
 }
+
+#undef COLLISION_PERMISSION_REQUEST_TIMEOUT
+#undef COLLISION_PERMISSION_REQUEST_SIZE
 
 void CheckCollisionDataHolder_Init(CollisionDataHolder *collisionDataHolder, Entity *entity, Point *location, List *verticesList)
 {

@@ -46,6 +46,11 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         Entity *entity;
         while (ListIterator_Next(&entitiesIterator, (void **)&entity))
         {
+            if (entity->alive == ENTITY_DEAD)
+            {
+                continue;
+            }
+
             ListIterator onTickIterator;
             ListIterator_Init(&onTickIterator, &entity->onTick);
             void (*referenceOnTick)(Entity *);
