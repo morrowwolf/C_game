@@ -37,7 +37,7 @@ void LoadPipeline()
     IDXGIAdapter1 *hardwareAdapter = NULL;
 
     // Find an adapter that has at least D3D11 support
-    IDXGIFactory6 *factory6 = NULL;
+    IDXGIFactory6 *factory6 = NULL; // TODO: Release this?
     if (SUCCEEDED(CAST(factory4, factory6)))
     {
         DXGI_GPU_PREFERENCE gpuPreference = DXGI_GPU_PREFERENCE_UNSPECIFIED;
