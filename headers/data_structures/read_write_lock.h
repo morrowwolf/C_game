@@ -49,9 +49,10 @@ typedef struct
     void *returnedData;
 } ReadWriteLock_PermissionRequest;
 
-short ReadWriteLock_GetMultiplePermissions(List *, unsigned int);
-void ReadWriteLock_ReleaseMultiplePermissions(List *);
-void List_DestroyReadWriteLockPermissionRequestOnRemove(void *);
+short ReadWriteLock_GetMultiplePermissions(ReadWriteLock_PermissionRequest *,
+                                           unsigned int,
+                                           unsigned int);
+void ReadWriteLock_ReleaseMultiplePermissions(ReadWriteLock_PermissionRequest *, unsigned int);
 
 #ifdef DEBUG_SEMAPHORES
 typedef LONG NTSTATUS;

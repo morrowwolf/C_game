@@ -155,20 +155,22 @@ void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *readWriteLock, void **pr
 #endif
 }
 
-short ReadWriteLock_GetMultiplePermissions(List *listOfPermissions, unsigned int timeout)
+short ReadWriteLock_GetMultiplePermissions(ReadWriteLock_PermissionRequest *pointerToPermissionRequests,
+                                           unsigned int amountOfPermissionRequests,
+                                           unsigned int timeout)
 {
-    ListIterator listOfPermissionsIterator;
-    ListIterator_Init(&listOfPermissionsIterator, listOfPermissions);
 
     ReadWriteLock_PermissionRequest *permissionRequest;
-    while (ListIterator_Next(&listOfPermissionsIterator, (void **)&permissionRequest))
+    for (unsigned int i = 0; i < amountOfPermissionRequests; i++)
     {
+        permissionRequest = &pointerToPermissionRequests[i];
         if (permissionRequest->permissionType == ReadWriteLock_Read)
         {
             if (ReadWriteLock_GetReadPermissionTimeout(permissionRequest->readWriteLock, &permissionRequest->returnedData, timeout) == FALSE)
             {
-                while (ListIterator_Prev(&listOfPermissionsIterator, (void **)&permissionRequest))
+                for (unsigned int j = 1; j <= i; j++)
                 {
+                    permissionRequest = &pointerToPermissionRequests[i - j];
                     if (permissionRequest->permissionType == ReadWriteLock_Read)
                     {
                         ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
@@ -185,8 +187,9 @@ short ReadWriteLock_GetMultiplePermissions(List *listOfPermissions, unsigned int
         {
             if (ReadWriteLock_GetWritePermissionTimeout(permissionRequest->readWriteLock, &permissionRequest->returnedData, timeout) == FALSE)
             {
-                while (ListIterator_Prev(&listOfPermissionsIterator, (void **)&permissionRequest))
+                for (unsigned int j = 1; j <= i; j++)
                 {
+                    permissionRequest = &pointerToPermissionRequests[i - j];
                     if (permissionRequest->permissionType == ReadWriteLock_Read)
                     {
                         ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
@@ -208,14 +211,13 @@ short ReadWriteLock_GetMultiplePermissions(List *listOfPermissions, unsigned int
     return TRUE;
 }
 
-void ReadWriteLock_ReleaseMultiplePermissions(List *listOfPermissions)
+void ReadWriteLock_ReleaseMultiplePermissions(ReadWriteLock_PermissionRequest *pointerToPermissionRequests,
+                                              unsigned int amountOfPermissionRequests)
 {
-    ListIterator listOfPermissionsIterator;
-    ListIterator_Init(&listOfPermissionsIterator, listOfPermissions);
-
     ReadWriteLock_PermissionRequest *permissionRequest;
-    while (ListIterator_Next(&listOfPermissionsIterator, (void **)&permissionRequest))
+    for (unsigned int i = 0; i < amountOfPermissionRequests; i++)
     {
+        permissionRequest = &pointerToPermissionRequests[i];
         if (permissionRequest->permissionType == ReadWriteLock_Read)
         {
             ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
@@ -229,25 +231,6 @@ void ReadWriteLock_ReleaseMultiplePermissions(List *listOfPermissions)
             abort();
         }
     }
-}
-
-void List_DestroyReadWriteLockPermissionRequestOnRemove(void *data)
-{
-    ReadWriteLock_PermissionRequest *permissionRequest = (ReadWriteLock_PermissionRequest *)data;
-    if (permissionRequest->permissionType == ReadWriteLock_Read)
-    {
-        ReadWriteLock_ReleaseReadPermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
-    }
-    else if (permissionRequest->permissionType == ReadWriteLock_Write)
-    {
-        ReadWriteLock_ReleaseWritePermission(permissionRequest->readWriteLock, &permissionRequest->returnedData);
-    }
-    else
-    {
-        abort();
-    }
-
-    free(permissionRequest);
 }
 
 #ifdef DEBUG_SEMAPHORES
