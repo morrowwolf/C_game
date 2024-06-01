@@ -15,12 +15,15 @@ struct EntityInternal
 #define ENTITY_ALIVE 1
 #define ENTITY_DEAD 0
     volatile long alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead
+
     RWL_Point location;
     Vector velocity;
     Vector velocityThisTick;
+
     double rotation;
     double rotationVelocity;
     double rotationVelocityThisTick;
+
     double radius;
 
     int lifetime;

@@ -15,6 +15,7 @@
 #include <winerror.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <d3dcompiler.h>
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -52,7 +53,7 @@
 #define SIGNOF(value) \
     ((value >= 0) ? 1 : -1)
 
-#define HRESULT_EXIT_IF_FAILED(result)                                                              \
+#define HANDLE_HRESULT(result)                                                                      \
     if (FAILED(result))                                                                             \
     {                                                                                               \
         TCHAR buffer[256];                                                                          \
@@ -62,7 +63,7 @@
         exit(EXIT_FAILURE);                                                                         \
     }
 
-#define NULL_EXIT_IF_FAILED(result)                                                                       \
+#define HANDLE_ERROR(result)                                                                              \
     if (result == NULL)                                                                                   \
     {                                                                                                     \
         TCHAR buffer[256];                                                                                \
@@ -74,13 +75,13 @@
 
 #define MINIMUM_FLOAT_DIFFERENCE 0.0000001
 
-typedef struct
+typedef struct Point
 {
     double x;
     double y;
 } Point, Vector;
 
-typedef struct
+typedef struct Gamestate
 {
     __int8 debugMode;
 
@@ -116,7 +117,7 @@ typedef struct
 
 Gamestate *GAMESTATE;
 
-typedef struct
+typedef struct TaskState
 {
     RWL_List taskQueue;
     List tasksCompleteSyncEvents;
@@ -125,7 +126,7 @@ typedef struct
 
 TaskState *TASKSTATE;
 
-typedef struct
+typedef struct Screen
 {
     HWND windowHandle;
 
@@ -135,13 +136,20 @@ typedef struct
     unsigned int screenWidth;
     unsigned int screenHeight;
 
+    D3D12_VIEWPORT viewport;
+    D3D12_RECT scissorRect;
+
     ID3D12Device *device;
     IDXGISwapChain3 *swapChain;
 
+    ID3D12CommandAllocator *commandAllocator;
     ID3D12CommandQueue *commandQueue;
 
-    D3D12_VIEWPORT viewport;
-    D3D12_RECT scissorRect;
+    ID3D12RootSignature *rootSignature;
+
+    ID3D12DescriptorHeap *rtvHeap;
+#define FRAME_COUNT 2
+    ID3D12Resource *renderTargets[FRAME_COUNT];
 
     unsigned int rtvDescriptorSize;
 
