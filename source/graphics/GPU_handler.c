@@ -37,7 +37,7 @@ void LoadPipeline()
     IDXGIAdapter1 *hardwareAdapter = NULL;
 
     // Find an adapter that has at least D3D11 support
-    IDXGIFactory6 *factory6 = NULL; // TODO: Release this?
+    IDXGIFactory6 *factory6 = NULL;
     if (SUCCEEDED(CAST(factory4, factory6)))
     {
         DXGI_GPU_PREFERENCE gpuPreference = DXGI_GPU_PREFERENCE_UNSPECIFIED;
@@ -62,6 +62,7 @@ void LoadPipeline()
                 break;
             }
         }
+        RELEASE(factory6);
     }
 
     if (hardwareAdapter == NULL)
@@ -152,19 +153,19 @@ void LoadAssets()
             .pStaticSamplers = NULL,
             .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT};
 
-        // STOPPED HERE:
-
-        // Note: Blobs don't seem to be actually RefCounted. We can call Release on them even after the count has reached zero
-        // and they also don't show up when calling ReportLiveObjects. Therefore, there is no need to release them.
         ID3DBlob *signature = NULL;
         ID3DBlob *error = NULL;
         HANDLE_HRESULT(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
         const LPVOID bufferPointer = CALL(GetBufferPointer, signature);
         const SIZE_T bufferSize = CALL(GetBufferSize, signature);
         HANDLE_HRESULT(CALL(CreateRootSignature, SCREEN->device, 0, bufferPointer, bufferSize, IID_PPV_ARGS(&SCREEN->rootSignature)));
+
+        // Allegedly ID3DBlob is not reference counted and do not need to be released but just in case.
+        RELEASE(signature);
+        RELEASE(error);
     }
 
-    /* Create the pipeline state, which includes compiling and loading shaders */
+    // Create the pipeline state, which includes compiling and loading shaders
     {
         ID3DBlob *vertexShader = NULL;
         ID3DBlob *pixelShader = NULL;
@@ -186,7 +187,9 @@ void LoadAssets()
                 {.SemanticName = "POSITION", .SemanticIndex = 0, .Format = DXGI_FORMAT_R32G32B32_FLOAT, .InputSlot = 0, .AlignedByteOffset = 0, .InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, .InstanceDataStepRate = 0},
                 {.SemanticName = "COLOR", .SemanticIndex = 0, .Format = DXGI_FORMAT_R32G32B32A32_FLOAT, .InputSlot = 0, .AlignedByteOffset = 12, .InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, .InstanceDataStepRate = 0}};
 
-        /* Create PSO */
+        // Create PSO
+
+        // STOPPED HERE
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {0};
         psoDesc.pRootSignature = SCREEN->rootSignature;
