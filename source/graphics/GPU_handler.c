@@ -1,7 +1,7 @@
 
 #include "../../headers/graphics/GPU_handler.h"
 
-void DX_Init()
+void Directx_Init()
 {
     SCREEN->aspectRatio = (float)SCREEN->screenWidth / (float)SCREEN->screenHeight;
     SCREEN->frameIndex = 0;
@@ -88,9 +88,9 @@ void LoadPipeline()
 
     // Create swap chain
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {0};
-    swapChainDesc.BufferCount = 2; // Pretty sure this should be FRAME_COUNT
-    swapChainDesc.Width = 1280;    // TODO: Change these values to our screen size
-    swapChainDesc.Height = 720;
+    swapChainDesc.BufferCount = FRAME_COUNT;
+    swapChainDesc.Width = SCREEN->screenWidth;
+    swapChainDesc.Height = SCREEN->screenHeight;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -177,7 +177,8 @@ void LoadAssets()
         const UINT compileFlags = 0;
 #endif
 
-        const wchar_t *shadersPath = wcscat(SCREEN->assetsPath, L"shaders/shaders.hlsl");
+        const wchar_t *shadersPath = wcscat(SCREEN->assetsPath, L"shaders.hlsl");
+
         HANDLE_HRESULT(D3DCompileFromFile(shadersPath, NULL, NULL, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, NULL));
         HANDLE_HRESULT(D3DCompileFromFile(shadersPath, NULL, NULL, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, NULL));
 
@@ -189,13 +190,8 @@ void LoadAssets()
 
         // Create PSO
 
-        // STOPPED HERE
-
         D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {0};
         psoDesc.pRootSignature = SCREEN->rootSignature;
-        psoDesc.InputLayout = (D3D12_INPUT_LAYOUT_DESC){
-            .pInputElementDescs = inputElementDescs,
-            .NumElements = _countof(inputElementDescs)};
         psoDesc.VS = (D3D12_SHADER_BYTECODE){
             .pShaderBytecode = CALL(GetBufferPointer, vertexShader),
             .BytecodeLength = CALL(GetBufferSize, vertexShader),
@@ -204,26 +200,69 @@ void LoadAssets()
             .pShaderBytecode = CALL(GetBufferPointer, pixelShader),
             .BytecodeLength = CALL(GetBufferSize, pixelShader),
         };
-        psoDesc.RasterizerState = CD3DX12_DEFAULT_RASTERIZER_DESC();
-        psoDesc.BlendState = CD3DX12_DEFAULT_BLEND_DESC();
+
+        D3D12_BLEND_DESC blendDesc;
+        blendDesc.AlphaToCoverageEnable = FALSE;
+        blendDesc.IndependentBlendEnable = FALSE;
+        for (int i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+        {
+            blendDesc.RenderTarget[i] = (D3D12_RENDER_TARGET_BLEND_DESC){
+                .BlendEnable = FALSE,
+                .LogicOpEnable = FALSE,
+                .SrcBlend = D3D12_BLEND_ONE,
+                .DestBlend = D3D12_BLEND_ZERO,
+                .BlendOp = D3D12_BLEND_OP_ADD,
+                .SrcBlendAlpha = D3D12_BLEND_ONE,
+                .DestBlendAlpha = D3D12_BLEND_ZERO,
+                .BlendOpAlpha = D3D12_BLEND_OP_ADD,
+                .LogicOp = D3D12_LOGIC_OP_NOOP,
+                .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL,
+            };
+        }
+
+        psoDesc.BlendState = blendDesc;
+
+        psoDesc.SampleMask = UINT_MAX;
+
+        D3D12_RASTERIZER_DESC rasterizerDesc = {
+            .FillMode = D3D12_FILL_MODE_SOLID,
+            .CullMode = D3D12_CULL_MODE_BACK,
+            .FrontCounterClockwise = FALSE,
+            .DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
+            .DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+            .SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+            .DepthClipEnable = TRUE,
+            .MultisampleEnable = FALSE,
+            .AntialiasedLineEnable = FALSE,
+            .ForcedSampleCount = 0,
+            .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+        };
+
+        psoDesc.RasterizerState = rasterizerDesc;
+
         psoDesc.DepthStencilState.DepthEnable = FALSE;
         psoDesc.DepthStencilState.StencilEnable = FALSE;
-        psoDesc.SCREENMask = UINT_MAX;
+
+        psoDesc.InputLayout = (D3D12_INPUT_LAYOUT_DESC){
+            .pInputElementDescs = inputElementDescs,
+            .NumElements = _countof(inputElementDescs)};
+
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         psoDesc.NumRenderTargets = 1;
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-        psoDesc.SCREENDesc.Count = 1;
+        psoDesc.SampleDesc.Count = 1;
         HANDLE_HRESULT(CALL(CreateGraphicsPipelineState, SCREEN->device, &psoDesc, IID_PPV_ARGS(&SCREEN->pipelineState)));
     }
 
-    /* Create the command list */
+    // Create the command list
 
     HANDLE_HRESULT(CALL(CreateCommandList, SCREEN->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, SCREEN->commandAllocator, SCREEN->pipelineState, IID_PPV_ARGS(&SCREEN->commandList)));
+
     // Command lists are created in the recording state, but there is nothing
     // to record yet. The main loop expects it to be closed, so close it now
     HANDLE_HRESULT(CALL(Close, SCREEN->commandList));
 
-    /* Create the vertex buffer, populate it and set a view to it */
+    // Create the vertex buffer, populate it and set a view to it
     {
         // Coordinates are in relation to the screen center, left-handed (+z to screen inside, +y up, +x right)
         const Vertex triangleVertices[] =
@@ -232,15 +271,28 @@ void LoadAssets()
                 {{0.25f, -0.25f * SCREEN->aspectRatio, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
                 {{-0.25f, -0.25f * SCREEN->aspectRatio, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
             };
+
         const UINT vertexBufferSize = sizeof(triangleVertices);
-        const D3D12_HEAP_PROPERTIES heapPropertyUpload = (D3D12_HEAP_PROPERTIES){
+
+        const D3D12_HEAP_PROPERTIES heapPropertyUpload = {
             .Type = D3D12_HEAP_TYPE_UPLOAD,
             .CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
             .MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
             .CreationNodeMask = 1,
             .VisibleNodeMask = 1,
         };
-        const D3D12_RESOURCE_DESC bufferResource = CD3DX12_RESOURCE_DESC_BUFFER(vertexBufferSize, D3D12_RESOURCE_FLAG_NONE, 0);
+
+        const D3D12_RESOURCE_DESC bufferResource = {
+            .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+            .Alignment = 0,
+            .Width = vertexBufferSize,
+            .Height = 1,
+            .DepthOrArraySize = 1,
+            .MipLevels = 1,
+            .Format = DXGI_FORMAT_UNKNOWN,
+            .SampleDesc = {.Count = 1, .Quality = 0},
+            .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+            .Flags = D3D12_RESOURCE_FLAG_NONE};
 
         // Note: using upload heaps to transfer static data like vert buffers is not
         // recommended. Every time the GPU needs it, the upload heap will be marshalled
@@ -259,7 +311,7 @@ void LoadAssets()
         // to the vertex buffer's memory directly
         UINT8 *pVertexDataBegin = NULL; // UINT8 to represent byte-level manipulation
         // We do not intend to read from this resource on the CPU, only write
-        const D3D12_RANGE readRange = (D3D12_RANGE){.Begin = 0, .End = 0};
+        const D3D12_RANGE readRange = {.Begin = 0, .End = 0};
         HANDLE_HRESULT(CALL(Map, SCREEN->vertexBuffer, 0, &readRange, (void **)(&pVertexDataBegin)));
         memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
         // While mapped, the GPU cannot access the buffer, so it's important to minimize the time
@@ -278,13 +330,29 @@ void LoadAssets()
         SCREEN->fenceValue = 1;
 
         // Create an event handle to use for frame synchronization
-        HANDLE_ERROR(SCREEN->fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL));
+        HANDLE_ERROR((SCREEN->fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL)));
 
         // Wait for the command list to execute; we are reusing the same command
         // list in our main loop, but for now, we just want to wait for setup to
         // complete before continuing
         WaitForPreviousFrame();
     }
+}
+
+void Directx_Update() {}
+
+void Directx_Render()
+{
+    PopulateCommandList();
+
+    ID3D12CommandList *asCommandList = NULL;
+    CAST(SCREEN->commandList, asCommandList);
+    ID3D12CommandList *ppCommandLists[] = {asCommandList};
+    CALL(ExecuteCommandLists, SCREEN->commandQueue, _countof(ppCommandLists), ppCommandLists);
+    RELEASE(asCommandList);
+
+    HANDLE_HRESULT(CALL(Present, SCREEN->swapChain, 1, 0));
+    WaitForPreviousFrame();
 }
 
 void WaitForPreviousFrame()
@@ -319,11 +387,16 @@ void PopulateCommandList()
     CALL(RSSetScissorRects, SCREEN->commandList, 1, &SCREEN->scissorRect);
 
     // Indicate that the back buffer will be used as a render target
-    const D3D12_RESOURCE_BARRIER transitionBarrierRT = CD3DX12_Transition(SCREEN->renderTargets[SCREEN->frameIndex],
-                                                                          D3D12_RESOURCE_STATE_PRESENT,
-                                                                          D3D12_RESOURCE_STATE_RENDER_TARGET,
-                                                                          D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                          D3D12_RESOURCE_BARRIER_FLAG_NONE);
+    const D3D12_RESOURCE_BARRIER transitionBarrierRT = {
+        .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+        .Transition = {
+            .pResource = SCREEN->renderTargets[SCREEN->frameIndex],
+            .StateBefore = D3D12_RESOURCE_STATE_PRESENT,
+            .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET,
+            .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        }};
+
     CALL(ResourceBarrier, SCREEN->commandList, 1, &transitionBarrierRT);
 
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
@@ -335,22 +408,26 @@ void PopulateCommandList()
     // Record commands
     const float clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
     CALL(ClearRenderTargetView, SCREEN->commandList, rtvHandle, clearColor, 0, NULL);
-    CALL(IASetVertexBuffers, SCREEN->commandList, 0, 1, &SCREEN->vertexBufferView);
     CALL(IASetPrimitiveTopology, SCREEN->commandList, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    CALL(IASetVertexBuffers, SCREEN->commandList, 0, 1, &SCREEN->vertexBufferView);
     CALL(DrawInstanced, SCREEN->commandList, 3, 1, 0, 0);
 
-    D3D12_RESOURCE_BARRIER transitionBarrierPresent = CD3DX12_Transition(SCREEN->renderTargets[SCREEN->frameIndex],
-                                                                         D3D12_RESOURCE_STATE_RENDER_TARGET,
-                                                                         D3D12_RESOURCE_STATE_PRESENT,
-                                                                         D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                         D3D12_RESOURCE_BARRIER_FLAG_NONE);
+    D3D12_RESOURCE_BARRIER transitionBarrierPresent = {
+        .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+        .Transition = {
+            .pResource = SCREEN->renderTargets[SCREEN->frameIndex],
+            .StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET,
+            .StateAfter = D3D12_RESOURCE_STATE_PRESENT,
+            .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        }};
 
     // Indicate that the back buffer will now be used to present
     CALL(ResourceBarrier, SCREEN->commandList, 1, &transitionBarrierPresent);
     HANDLE_HRESULT(CALL(Close, SCREEN->commandList));
 }
 
-void ReleaseAll()
+void ReleaseDirectxObjects()
 {
     RELEASE(SCREEN->swapChain);
     RELEASE(SCREEN->device);

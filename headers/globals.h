@@ -53,24 +53,24 @@
 #define SIGNOF(value) \
     ((value >= 0) ? 1 : -1)
 
-#define HANDLE_HRESULT(result)                                                                      \
-    if (FAILED(result))                                                                             \
-    {                                                                                               \
-        TCHAR buffer[256];                                                                          \
-        _stprintf(buffer, TEXT("Failure at %s:%d.\nHRESULT: 0x%08X."), __FILE__, __LINE__, result); \
-        OutputDebugString(buffer);                                                                  \
-        MessageBox(SCREEN->windowHandle, buffer, NULL, MB_OK);                                      \
-        exit(EXIT_FAILURE);                                                                         \
-    }
-
-#define HANDLE_ERROR(result)                                                                              \
-    if (result == NULL)                                                                                   \
+#define HANDLE_HRESULT(result)                                                                            \
+    if (FAILED(result))                                                                                   \
     {                                                                                                     \
         TCHAR buffer[256];                                                                                \
-        _stprintf(buffer, TEXT("Failure at %s:%d.\nERROR: 0x%08X."), __FILE__, __LINE__, GetLastError()); \
+        _stprintf(buffer, TEXT("Failure at %s:%d.\nHRESULT: 0x%08X."), TEXT(__FILE__), __LINE__, result); \
         OutputDebugString(buffer);                                                                        \
         MessageBox(SCREEN->windowHandle, buffer, NULL, MB_OK);                                            \
         exit(EXIT_FAILURE);                                                                               \
+    }
+
+#define HANDLE_ERROR(result)                                                                                    \
+    if (result == NULL)                                                                                         \
+    {                                                                                                           \
+        TCHAR buffer[256];                                                                                      \
+        _stprintf(buffer, TEXT("Failure at %s:%d.\nERROR: 0x%08X."), TEXT(__FILE__), __LINE__, GetLastError()); \
+        OutputDebugString(buffer);                                                                              \
+        MessageBox(SCREEN->windowHandle, buffer, NULL, MB_OK);                                                  \
+        exit(EXIT_FAILURE);                                                                                     \
     }
 
 #define MINIMUM_FLOAT_DIFFERENCE 0.0000001
@@ -142,8 +142,11 @@ typedef struct Screen
     ID3D12Device *device;
     IDXGISwapChain3 *swapChain;
 
-    ID3D12CommandAllocator *commandAllocator;
+    ID3D12PipelineState *pipelineState;
+
     ID3D12CommandQueue *commandQueue;
+    ID3D12CommandAllocator *commandAllocator;
+    ID3D12GraphicsCommandList *commandList;
 
     ID3D12RootSignature *rootSignature;
 
@@ -151,9 +154,15 @@ typedef struct Screen
 #define FRAME_COUNT 2
     ID3D12Resource *renderTargets[FRAME_COUNT];
 
+    ID3D12Resource *vertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+
     unsigned int rtvDescriptorSize;
 
     unsigned int frameIndex;
+    HANDLE fenceEvent;
+    ID3D12Fence *fence;
+    unsigned __int64 fenceValue;
 
     // About 256 frames per second, exact 256 frames would be 390625ULL
 #define DEFAULT_FRAME_REFRESH_RATE 39063ULL

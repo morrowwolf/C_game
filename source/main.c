@@ -30,6 +30,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	HANDLE threadHandle;
 
 	SCREEN = calloc(1, sizeof(Screen));
+	SCREEN->screenWidth = DEFAULT_SCREEN_SIZE_X;
+	SCREEN->screenHeight = DEFAULT_SCREEN_SIZE_Y;
 
 	TASKSTATE = calloc(1, sizeof(TaskState));
 
@@ -60,6 +62,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	WindowHandler(hInstance, iCmdShow);
 
+	//
+	// Clean up:
+	//
 	SetEvent(GAMESTATE->keyEvent);
 
 	ListIterator tasksQueuedEventsIterator;

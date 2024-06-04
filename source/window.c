@@ -44,7 +44,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
                                         CW_USEDEFAULT, CW_USEDEFAULT, windowRect.right - windowRect.left,
                                         windowRect.bottom - windowRect.top, NULL, NULL, hInstance, NULL);
 
-    DX_Init();
+    Directx_Init();
 
     ShowCursor(FALSE);
     ShowWindow(SCREEN->windowHandle, iCmdShow);
@@ -91,6 +91,10 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         MsgWaitForMultipleObjects(1, &hUpdateWindowTimer, FALSE, INFINITE, QS_ALLINPUT);
         lastMessage = TRUE;
     }
+
+    WaitForPreviousFrame();
+    CloseHandle(SCREEN->fenceEvent);
+    ReleaseDirectxObjects();
 
     return msg.wParam;
 }
@@ -155,6 +159,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void WndProcHandlePaint(HWND hWnd, HDC hdc)
 {
+    Directx_Update();
+    Directx_Render();
 }
 
 void HandleNonGameKeys(UINT_PTR keyCode)
