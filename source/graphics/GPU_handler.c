@@ -376,6 +376,11 @@ void PopulateCommandList()
     Entity *entity;
     while (ListIterator_Next(&entitiesIterator, (void **)&entity))
     {
+        if (entity->alive == ENTITY_DEAD)
+        {
+            continue;
+        }
+
         ListIterator onRenderIterator;
         ListIterator_Init(&onRenderIterator, &entity->onRender);
         void (*onRender)(Entity *);

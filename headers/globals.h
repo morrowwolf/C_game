@@ -2,7 +2,7 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-#define DEBUG
+// #define DEBUG
 
 #define _USE_MATH_DEFINES
 
