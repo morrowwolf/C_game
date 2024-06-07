@@ -17,7 +17,7 @@ void SpawnFiredBullet(Entity *firingEntity)
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
     List_Insert(&settingUpEntity->onCollision, OnCollisionKill);
     List_Insert(&settingUpEntity->onDeath, OnDeathBullet);
-    List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
     List_Insert(&settingUpEntity->onTick, OnTickExpire);
 

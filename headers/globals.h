@@ -19,6 +19,7 @@
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
+#include "graphics/D3DX12_globals.h"
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
@@ -153,9 +154,6 @@ typedef struct Screen
     ID3D12DescriptorHeap *rtvHeap;
 #define FRAME_COUNT 2
     ID3D12Resource *renderTargets[FRAME_COUNT];
-
-    ID3D12Resource *vertexBuffer;
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
     unsigned int rtvDescriptorSize;
 

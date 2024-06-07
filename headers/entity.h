@@ -33,10 +33,16 @@ struct EntityInternal
     List baseVertices;               // List of Point
     RWL_List rotationOffsetVertices; // List of Point
 
+    ID3D12Resource *vertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+
+    ID3D12Resource *indexBuffer;
+    D3D12_INDEX_BUFFER_VIEW indexBufferView;
+
     List onCollision;            // List of int (*)(Entity *, Entity *)
     List onDeath;                // List of void (*)(Entity *)
     void (*onDestroy)(Entity *); // onDestroy would release itself, everyone gets one
-    List onDraw;                 // List of void (*)(Entity *, HDC *)
+    List onRender;               // List of void (*)(Entity *)
     List onTick;                 // List of void (*)(Entity *)
 
 #ifdef DEBUG
@@ -66,7 +72,7 @@ void SetupRadius(Entity *);
 
 void OnCollisionDeath(Entity *, Entity *);
 
-void OnDrawVertexLines(Entity *, HDC *);
+void OnRenderUpdate(Entity *);
 
 void OnTickHandleMovement(Entity *);
 

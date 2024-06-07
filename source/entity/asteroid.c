@@ -15,7 +15,7 @@ void SpawnAsteroid()
     SetupRadius(settingUpEntity);
 
     settingUpEntity->onDestroy = AsteroidDestroy;
-    List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
 
     List *asteroids;

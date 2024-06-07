@@ -92,7 +92,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         lastMessage = TRUE;
     }
 
-    WaitForPreviousFrame();
+    WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
     CloseHandle(SCREEN->fenceEvent);
     ReleaseDirectxObjects();
 
@@ -142,12 +142,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_PAINT:
-        HDC hdc;
         PAINTSTRUCT ps;
 
-        hdc = BeginPaint(hWnd, &ps);
+        BeginPaint(hWnd, &ps);
 
-        WndProcHandlePaint(hWnd, hdc);
+        WndProcHandlePaint();
 
         EndPaint(hWnd, &ps);
 
@@ -157,9 +156,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-void WndProcHandlePaint(HWND hWnd, HDC hdc)
+void WndProcHandlePaint()
 {
-    Directx_Update();
     Directx_Render();
 }
 

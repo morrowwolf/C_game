@@ -32,14 +32,13 @@ typedef struct IDXGISwapChain3 IDXGISwapChain3;
 
 #define IID_PPV_ARGS(ppType) __extractIID(ppType), (void **)(ppType)
 
-// The ## __VA_ARGS__ is not portable, being a GCC extension https://gcc.gnu.org/onlinedocs/gcc/Variadic-Macros.html
-// But apparently, it also works in MSVC as well
+// Calls a function on the caller, passes the rest of the arguments to the function
 #define CALL(METHOD, CALLER, ...) CALLER->lpVtbl->METHOD(CALLER, ##__VA_ARGS__)
 
 // cast COM style
 #define CAST(from, to) CALL(QueryInterface, from, IID_PPV_ARGS(&to))
 
-// Calls Release and makes the pointer NULL if RefCount reaches zero
+// For COM objects: Calls Release and makes the pointer NULL if RefCount reaches zero
 #define RELEASE(ptr)                           \
     if (ptr && ptr->lpVtbl->Release(ptr) == 0) \
     ptr = NULL

@@ -56,7 +56,7 @@ void LoadPipeline()
 
             IUnknown *hardwareAdapterAsIUnknown = NULL;
             HANDLE_HRESULT(CAST(hardwareAdapter, hardwareAdapterAsIUnknown));
-            if (SUCCEEDED(D3D12CreateDevice(hardwareAdapterAsIUnknown, D3D_FEATURE_LEVEL_11_0, &IID_ID3D12Device, NULL)))
+            if (SUCCEEDED(D3D12CreateDevice(hardwareAdapterAsIUnknown, D3D_FEATURE_LEVEL_12_0, &IID_ID3D12Device, NULL)))
             {
                 RELEASE(hardwareAdapterAsIUnknown);
                 break;
@@ -76,7 +76,7 @@ void LoadPipeline()
     // Create device
     IUnknown *hardwareAdapterAsIUnknown = NULL;
     HANDLE_HRESULT(CAST(hardwareAdapter, hardwareAdapterAsIUnknown));
-    HANDLE_HRESULT(D3D12CreateDevice(hardwareAdapterAsIUnknown, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&SCREEN->device)));
+    HANDLE_HRESULT(D3D12CreateDevice(hardwareAdapterAsIUnknown, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&SCREEN->device)));
     RELEASE(hardwareAdapterAsIUnknown);
     RELEASE(hardwareAdapter);
 
@@ -177,6 +177,7 @@ void LoadAssets()
         const UINT compileFlags = 0;
 #endif
 
+        // TODO: Compile shaders internally
         const wchar_t *shadersPath = wcscat(SCREEN->assetsPath, L"shaders.hlsl");
 
         HANDLE_HRESULT(D3DCompileFromFile(shadersPath, NULL, NULL, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, NULL));
@@ -247,7 +248,7 @@ void LoadAssets()
             .pInputElementDescs = inputElementDescs,
             .NumElements = _countof(inputElementDescs)};
 
-        psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
         psoDesc.NumRenderTargets = 1;
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
         psoDesc.SampleDesc.Count = 1;
@@ -262,87 +263,31 @@ void LoadAssets()
     // to record yet. The main loop expects it to be closed, so close it now
     HANDLE_HRESULT(CALL(Close, SCREEN->commandList));
 
-    // Create the vertex buffer, populate it and set a view to it
-    {
-        // Coordinates are in relation to the screen center, left-handed (+z to screen inside, +y up, +x right)
-        const Vertex triangleVertices[] =
-            {
-                {{0.0f, 0.25f * SCREEN->aspectRatio, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-                {{0.25f, -0.25f * SCREEN->aspectRatio, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-                {{-0.25f, -0.25f * SCREEN->aspectRatio, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-            };
-
-        const UINT vertexBufferSize = sizeof(triangleVertices);
-
-        const D3D12_HEAP_PROPERTIES heapPropertyUpload = {
-            .Type = D3D12_HEAP_TYPE_UPLOAD,
-            .CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-            .MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
-            .CreationNodeMask = 1,
-            .VisibleNodeMask = 1,
-        };
-
-        const D3D12_RESOURCE_DESC bufferResource = {
-            .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-            .Alignment = 0,
-            .Width = vertexBufferSize,
-            .Height = 1,
-            .DepthOrArraySize = 1,
-            .MipLevels = 1,
-            .Format = DXGI_FORMAT_UNKNOWN,
-            .SampleDesc = {.Count = 1, .Quality = 0},
-            .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-            .Flags = D3D12_RESOURCE_FLAG_NONE};
-
-        // Note: using upload heaps to transfer static data like vert buffers is not
-        // recommended. Every time the GPU needs it, the upload heap will be marshalled
-        // over. Please read up on Default Heap usage. An upload heap is used here for
-        // code simplicity and because there are very few verts to actually transfer
-        HANDLE_HRESULT(CALL(CreateCommittedResource, SCREEN->device,
-                            &heapPropertyUpload,
-                            D3D12_HEAP_FLAG_NONE,
-                            &bufferResource,
-                            D3D12_RESOURCE_STATE_GENERIC_READ,
-                            NULL,
-                            IID_PPV_ARGS(&SCREEN->vertexBuffer)));
-
-        // We will open the vertexBuffer memory (that is in the GPU) for the CPU to write the triangle data
-        // in it. To do that, we use the Map() function, which enables the CPU to read from or write
-        // to the vertex buffer's memory directly
-        UINT8 *pVertexDataBegin = NULL; // UINT8 to represent byte-level manipulation
-        // We do not intend to read from this resource on the CPU, only write
-        const D3D12_RANGE readRange = {.Begin = 0, .End = 0};
-        HANDLE_HRESULT(CALL(Map, SCREEN->vertexBuffer, 0, &readRange, (void **)(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
-        // While mapped, the GPU cannot access the buffer, so it's important to minimize the time
-        // the buffer is mapped.
-        CALL(Unmap, SCREEN->vertexBuffer, 0, NULL);
-
-        // Initialize the vertex buffer view
-        SCREEN->vertexBufferView.BufferLocation = CALL(GetGPUVirtualAddress, SCREEN->vertexBuffer);
-        SCREEN->vertexBufferView.StrideInBytes = sizeof(Vertex);
-        SCREEN->vertexBufferView.SizeInBytes = vertexBufferSize;
-    }
-
     // Create synchronization objects and wait until assets have been uploaded to the GPU
     {
         HANDLE_HRESULT(CALL(CreateFence, SCREEN->device, 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&SCREEN->fence)));
         SCREEN->fenceValue = 1;
 
         // Create an event handle to use for frame synchronization
-        HANDLE_ERROR((SCREEN->fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL)));
+        HANDLE_ERROR((SCREEN->fenceEvent = CreateEvent(NULL, TRUE, FALSE, NULL)));
 
         // Wait for the command list to execute; we are reusing the same command
         // list in our main loop, but for now, we just want to wait for setup to
         // complete before continuing
-        WaitForPreviousFrame();
+        Directx_SetFenceAndWait();
     }
 }
 
-void Directx_Update() {}
-
 void Directx_Render()
 {
+    if (WaitForSingleObject(SCREEN->fenceEvent, 0) != WAIT_OBJECT_0)
+    {
+        return;
+    }
+    ResetEvent(SCREEN->fenceEvent);
+
+    SCREEN->frameIndex = CALL(GetCurrentBackBufferIndex, SCREEN->swapChain);
+
     PopulateCommandList();
 
     ID3D12CommandList *asCommandList = NULL;
@@ -352,21 +297,33 @@ void Directx_Render()
     RELEASE(asCommandList);
 
     HANDLE_HRESULT(CALL(Present, SCREEN->swapChain, 1, 0));
-    WaitForPreviousFrame();
+
+    Directx_SetFence();
 }
 
-void WaitForPreviousFrame()
+// Make sure to reset the fence
+void Directx_SetFence()
 {
-    // Signal to the fence the current fenceValue
     HANDLE_HRESULT(CALL(Signal, SCREEN->commandQueue, SCREEN->fence, SCREEN->fenceValue));
-    // Wait until the frame is finished (ie. reached the signal sent right above)
+
     if (CALL(GetCompletedValue, SCREEN->fence) < SCREEN->fenceValue)
     {
         HANDLE_HRESULT(CALL(SetEventOnCompletion, SCREEN->fence, SCREEN->fenceValue, SCREEN->fenceEvent));
-        WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
     }
+    else
+    {
+        SetEvent(SCREEN->fenceEvent);
+    }
+
     SCREEN->fenceValue++;
-    SCREEN->frameIndex = CALL(GetCurrentBackBufferIndex, SCREEN->swapChain);
+}
+
+void Directx_SetFenceAndWait()
+{
+    ResetEvent(SCREEN->fenceEvent);
+    Directx_SetFence();
+
+    WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
 }
 
 void PopulateCommandList()
@@ -406,11 +363,29 @@ void PopulateCommandList()
     CALL(OMSetRenderTargets, SCREEN->commandList, 1, &rtvHandle, FALSE, NULL);
 
     // Record commands
-    const float clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
+    const float clearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     CALL(ClearRenderTargetView, SCREEN->commandList, rtvHandle, clearColor, 0, NULL);
-    CALL(IASetPrimitiveTopology, SCREEN->commandList, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    CALL(IASetVertexBuffers, SCREEN->commandList, 0, 1, &SCREEN->vertexBufferView);
-    CALL(DrawInstanced, SCREEN->commandList, 3, 1, 0, 0);
+    CALL(IASetPrimitiveTopology, SCREEN->commandList, D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
+
+    List *entities;
+    ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
+
+    ListIterator entitiesIterator;
+    ListIterator_Init(&entitiesIterator, entities);
+
+    Entity *entity;
+    while (ListIterator_Next(&entitiesIterator, (void **)&entity))
+    {
+        ListIterator onRenderIterator;
+        ListIterator_Init(&onRenderIterator, &entity->onRender);
+        void (*onRender)(Entity *);
+        while (ListIterator_Next(&onRenderIterator, (void **)&onRender))
+        {
+            onRender(entity);
+        }
+    }
+
+    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
     D3D12_RESOURCE_BARRIER transitionBarrierPresent = {
         .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
@@ -441,6 +416,5 @@ void ReleaseDirectxObjects()
     RELEASE(SCREEN->rtvHeap);
     RELEASE(SCREEN->pipelineState);
     RELEASE(SCREEN->commandList);
-    RELEASE(SCREEN->vertexBuffer);
     RELEASE(SCREEN->fence);
 }

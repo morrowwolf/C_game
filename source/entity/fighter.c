@@ -14,7 +14,7 @@ void SpawnPlayerFighter()
 
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
     settingUpEntity->onDestroy = FighterDestroy;
-    List_Insert(&settingUpEntity->onDraw, OnDrawVertexLines);
+    List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
     List_Insert(&settingUpEntity->onTick, OnTickReduceFireDelay);
     List_Insert(&settingUpEntity->onTick, OnTickKeyAcceleration);
