@@ -1,5 +1,5 @@
 
-#include "../headers/main.h"
+#include "main.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {
@@ -29,43 +29,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Init(&threadHandles, NULL);
 	HANDLE threadHandle;
 
-#ifdef CPU_GRAPHICS
-
 	SCREEN = calloc(1, sizeof(Screen));
-
-	SCREEN->windowHandleInitializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-	unsigned int i;
-	for (i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		SCREEN->bufferDrawingMutexes[i] = CreateMutex(NULL, FALSE, NULL);
-		SCREEN->bufferRedrawSemaphores[i] = CreateSemaphore(NULL, 0, 1, NULL);
-
-		// Freed by the handler
-		BufferArgs *bufferArgs = malloc(sizeof(BufferArgs));
-		bufferArgs->bufferId = i;
-		threadHandle = CreateThread(NULL, 0, BufferHandler, bufferArgs, 0, NULL);
-		List_Insert(&threadHandles, threadHandle);
-	}
-
-#endif
+	SCREEN->screenWidth = DEFAULT_SCREEN_SIZE_X;
+	SCREEN->screenHeight = DEFAULT_SCREEN_SIZE_Y;
 
 	TASKSTATE = calloc(1, sizeof(TaskState));
 
-	List *taskQueue = malloc(sizeof(List));
-	List_Init(taskQueue, NULL);
-	ReadWriteLock_Init(&TASKSTATE->taskQueue, taskQueue);
+	List *systemTaskQueue = malloc(sizeof(List));
+	List_Init(systemTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->systemTaskQueue, systemTaskQueue);
 
-	List_Init(&TASKSTATE->tasksCompleteSyncEvents, NULL);
-	List_Init(&TASKSTATE->tasksQueuedSyncEvents, NULL);
+	List *gamestateTaskQueue = malloc(sizeof(List));
+	List_Init(gamestateTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->gamestateTaskQueue, gamestateTaskQueue);
+
+	List *garbageTaskQueue = malloc(sizeof(List));
+	List_Init(garbageTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->garbageTaskQueue, garbageTaskQueue);
+
+	List_Init(&TASKSTATE->gamestateTasksCompleteSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->tasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->systemTasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->gamestateTasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->garbageTasksQueuedSyncEvents, List_CloseHandleOnRemove);
 
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 
-	for (i = 0; i < (systemInfo.dwNumberOfProcessors - BUFFER_THREAD_COUNT - 1); i++)
+	for (unsigned int i = 0; i < (systemInfo.dwNumberOfProcessors - 1); i++)
 	{
-		List_Insert(&TASKSTATE->tasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
+		List_Insert(&TASKSTATE->gamestateTasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
 		List_Insert(&TASKSTATE->tasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+
+		List_Insert(&TASKSTATE->systemTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->gamestateTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->garbageTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
 		TaskHandlerArgs *taskHandlerArgs = calloc(1, sizeof(TaskHandlerArgs));
 		taskHandlerArgs->taskHandlerID = i;
@@ -79,6 +77,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	WindowHandler(hInstance, iCmdShow);
 
+	//
+	// Clean up:
+	//
 	SetEvent(GAMESTATE->keyEvent);
 
 	ListIterator tasksQueuedEventsIterator;
@@ -89,15 +90,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		SetEvent(tasksQueuedSyncEvent);
 	}
 
-#ifdef CPU_GRAPHICS
-
-	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		ReleaseSemaphore(SCREEN->bufferRedrawSemaphores[i], 1, NULL);
-	}
-
-#endif
-
 	void *arrayOfThreadHandles;
 	List_GetAsArray(&threadHandles, &arrayOfThreadHandles);
 
@@ -106,27 +98,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	free(arrayOfThreadHandles);
 	List_Clear(&threadHandles);
 
-	ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
-	List_Clear(taskQueue);
-	free(taskQueue);
-	ReadWriteLock_Destroy(&TASKSTATE->taskQueue);
+	ReadWriteLock_GetWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
+	List_Clear(garbageTaskQueue);
+	free(garbageTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->garbageTaskQueue);
 
+	ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
+	List_Clear(gamestateTaskQueue);
+	free(gamestateTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->gamestateTaskQueue);
+
+	ReadWriteLock_GetWritePermission(&TASKSTATE->systemTaskQueue, (void **)&systemTaskQueue);
+	List_Clear(systemTaskQueue);
+	free(systemTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->systemTaskQueue);
+
+	List_Clear(&TASKSTATE->garbageTasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->gamestateTasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->systemTasksQueuedSyncEvents);
 	List_Clear(&TASKSTATE->tasksQueuedSyncEvents);
-	List_Clear(&TASKSTATE->tasksCompleteSyncEvents);
+	List_Clear(&TASKSTATE->gamestateTasksCompleteSyncEvents);
 
 	free(TASKSTATE);
 
-#ifdef CPU_GRAPHICS
-
-	for (unsigned int i = 0; i < BUFFER_THREAD_COUNT; i++)
-	{
-		CloseHandle(SCREEN->bufferRedrawSemaphores[i]);
-		CloseHandle(SCREEN->bufferDrawingMutexes[i]);
-	}
-
 	free(SCREEN);
-
-#endif
 
 	// All threads should be done at this point so we're just cleaning up.
 	ListIterator entitiesIterator;

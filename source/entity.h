@@ -2,7 +2,7 @@
 #ifndef ENTITY_H_
 #define ENTITY_H_
 
-#include "common_defines.h"
+#include "globals.h"
 #include "tasks.h"
 
 struct EntityInternal;
@@ -15,12 +15,15 @@ struct EntityInternal
 #define ENTITY_ALIVE 1
 #define ENTITY_DEAD 0
     volatile long alive; // ENTITY_ALIVE if alive, ENTITY_DEAD if dead
+
     RWL_Point location;
     Vector velocity;
     Vector velocityThisTick;
+
     double rotation;
     double rotationVelocity;
     double rotationVelocityThisTick;
+
     double radius;
 
     int lifetime;
@@ -30,10 +33,16 @@ struct EntityInternal
     List baseVertices;               // List of Point
     RWL_List rotationOffsetVertices; // List of Point
 
+    ID3D12Resource *vertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+
+    ID3D12Resource *indexBuffer;
+    D3D12_INDEX_BUFFER_VIEW indexBufferView;
+
     List onCollision;            // List of int (*)(Entity *, Entity *)
     List onDeath;                // List of void (*)(Entity *)
     void (*onDestroy)(Entity *); // onDestroy would release itself, everyone gets one
-    List onDraw;                 // List of void (*)(Entity *, HDC *)
+    List onRender;               // List of void (*)(Entity *)
     List onTick;                 // List of void (*)(Entity *)
 
 #ifdef DEBUG
@@ -63,7 +72,7 @@ void SetupRadius(Entity *);
 
 void OnCollisionDeath(Entity *, Entity *);
 
-void OnDrawVertexLines(Entity *, HDC *);
+void OnRenderUpdate(Entity *);
 
 void OnTickHandleMovement(Entity *);
 

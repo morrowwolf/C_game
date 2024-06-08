@@ -1,5 +1,5 @@
 
-#include "../../headers/data_structures/read_write_lock.h"
+#include "read_write_lock.h"
 
 void ReadWriteLock_Init(ReadWriteLock *readWriteLock, void *data)
 {
@@ -100,20 +100,6 @@ void ReadWriteLock_GetReadPermission(ReadWriteLock *readWriteLock, void **protec
 #endif
 }
 
-/**
- * @brief Gets read permission with a timeout from the specified ReadWriteLock.
- *
- * This function attempts to acquire read permission from the specified ReadWriteLock within the given timeout period.
- * If the read permission is acquired successfully, the protected data associated with the lock is returned through the `protectedData` parameter.
- *
- * @param readWriteLock A pointer to the ReadWriteLock from which to acquire read permission.
- * @param protectedData A pointer to a variable that will hold the protected data associated with the lock if read permission is acquired successfully.
- * @param timeout The maximum time (in milliseconds) to wait for acquiring read permission.
- *
- * @return A value indicating the result of the operation:
- *         - TRUE if read permission is acquired successfully.
- *         - FALSE if an error occurs or the timeout period is exceeded.
- */
 short ReadWriteLock_GetReadPermissionTimeout(ReadWriteLock *readWriteLock, void **protectedData, unsigned int timeout)
 {
 #ifdef DEBUG_SEMAPHORES

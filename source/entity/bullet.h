@@ -1,7 +1,6 @@
 #ifndef BULLET_H_
 #define BULLET_H_
 
-#include "../common_defines.h"
 #include "../entity.h"
 
 void SpawnFiredBullet(Entity *firingEntity);

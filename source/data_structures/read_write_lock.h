@@ -31,9 +31,11 @@ void ReadWriteLock_Init(ReadWriteLock *, void *);
 void ReadWriteLock_Destroy(ReadWriteLock *);
 
 void ReadWriteLock_GetWritePermission(ReadWriteLock *, void **);
+short ReadWriteLock_GetWritePermissionTimeout(ReadWriteLock *readWriteLock, void **protectedData, unsigned int timeout);
 void ReadWriteLock_ReleaseWritePermission(ReadWriteLock *, void **);
 
 void ReadWriteLock_GetReadPermission(ReadWriteLock *, void **);
+short ReadWriteLock_GetReadPermissionTimeout(ReadWriteLock *readWriteLock, void **protectedData, unsigned int timeout);
 void ReadWriteLock_ReleaseReadPermission(ReadWriteLock *, void **);
 
 enum ReadWriteLock_PermissionType

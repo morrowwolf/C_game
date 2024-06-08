@@ -1,5 +1,5 @@
 
-#include "../headers/gamestate.h"
+#include "gamestate.h"
 
 DWORD WINAPI GamestateHandler(LPVOID lpParam)
 {
@@ -10,8 +10,8 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 
     HANDLE *arrayOfTasksCompleteSyncEvents;
-    List_GetAsArray(&TASKSTATE->tasksCompleteSyncEvents, (void **)&arrayOfTasksCompleteSyncEvents);
-    unsigned short syncEventCount = TASKSTATE->tasksCompleteSyncEvents.length;
+    List_GetAsArray(&TASKSTATE->gamestateTasksCompleteSyncEvents, (void **)&arrayOfTasksCompleteSyncEvents);
+    unsigned short syncEventCount = TASKSTATE->gamestateTasksCompleteSyncEvents.length;
 
     unsigned short asteroidSpawnDelayCounter = 0;
 
@@ -58,14 +58,14 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
             {
                 Task *task = malloc(sizeof(Task));
                 task->task = (void (*)(void *))referenceOnTick;
-                task->taskArguments = entity;
+                task->taskArgument = entity;
                 List_Insert(&tasksToQueue, task);
             }
         }
 
         ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
-        Task_QueueTasks(&tasksToQueue);
+        Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
         List_Clear(&tasksToQueue);
 
         List *fighters;

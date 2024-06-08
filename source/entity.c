@@ -1,4 +1,4 @@
-#include "../headers/entity.h"
+#include "entity.h"
 
 void ZeroAndInitEntity(Entity **entity)
 {
@@ -17,7 +17,7 @@ void ZeroAndInitEntity(Entity **entity)
     List_Init(&(*entity)->onCollision, NULL);
     List_Init(&(*entity)->onDeath, NULL);
     List_Insert(&(*entity)->onDeath, EntityDeath);
-    List_Init(&(*entity)->onDraw, NULL);
+    List_Init(&(*entity)->onRender, NULL);
     List_Init(&(*entity)->onTick, NULL);
     (*entity)->onDestroy = EntityDestroy;
 
@@ -65,8 +65,15 @@ void EntityDestroy(Entity *entity)
 
     List_Clear(&entity->onCollision);
     List_Clear(&entity->onDeath);
-    List_Clear(&entity->onDraw);
+    List_Clear(&entity->onRender);
     List_Clear(&entity->onTick);
+
+    // TODO: Handle removal of graphics events better in potential hang situations
+    // We'll likely just add this to task system along with other garbage collection
+    WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
+
+    RELEASE(entity->vertexBuffer);
+    RELEASE(entity->indexBuffer);
     free(entity);
 }
 
@@ -348,8 +355,14 @@ void OnCollisionDeath(Entity *entity, Entity *collidingEntity)
     }
 }
 
-void OnDrawVertexLines(Entity *entity, HDC *hdc)
+void OnRenderUpdate(Entity *entity)
 {
+
+    // TODO: check against previous size before we release so we reuse the memory if we can
+
+    RELEASE(entity->vertexBuffer);
+    RELEASE(entity->indexBuffer);
+
     Point *referenceLocation;
     ReadWriteLock_GetReadPermission(&entity->location, (void **)&referenceLocation);
 
@@ -362,30 +375,105 @@ void OnDrawVertexLines(Entity *entity, HDC *hdc)
     List *rotationOffsetVertices;
     ReadWriteLock_GetReadPermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
 
+    unsigned int lengthOfVerticesList = rotationOffsetVertices->length;
+
+    D3D12_HEAP_PROPERTIES heapPropertyUpload = {
+        .Type = D3D12_HEAP_TYPE_UPLOAD,
+        .CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        .MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+        .CreationNodeMask = 1,
+        .VisibleNodeMask = 1,
+    };
+
+    int vertexBufferSize = lengthOfVerticesList * sizeof(Vertex);
+
+    D3D12_RESOURCE_DESC vertexBufferResource = {
+        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Alignment = 0,
+        .Width = vertexBufferSize,
+        .Height = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels = 1,
+        .Format = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        .Flags = D3D12_RESOURCE_FLAG_NONE,
+    };
+
+    HANDLE_HRESULT(CALL(CreateCommittedResource, SCREEN->device,
+                        &heapPropertyUpload,
+                        D3D12_HEAP_FLAG_NONE,
+                        &vertexBufferResource,
+                        D3D12_RESOURCE_STATE_GENERIC_READ,
+                        NULL,
+                        IID_PPV_ARGS(&entity->vertexBuffer)));
+
+    int indexBufferSize = (lengthOfVerticesList * sizeof(unsigned int)) + sizeof(unsigned int);
+
+    D3D12_RESOURCE_DESC indexBufferResource = {
+        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Alignment = 0,
+        .Width = indexBufferSize,
+        .Height = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels = 1,
+        .Format = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        .Flags = D3D12_RESOURCE_FLAG_NONE,
+    };
+
+    HANDLE_HRESULT(CALL(CreateCommittedResource, SCREEN->device,
+                        &heapPropertyUpload,
+                        D3D12_HEAP_FLAG_NONE,
+                        &indexBufferResource,
+                        D3D12_RESOURCE_STATE_GENERIC_READ,
+                        NULL,
+                        IID_PPV_ARGS(&entity->indexBuffer)));
+
+    D3D12_RANGE readRange = {.Begin = 0, .End = 0};
+
+    void *vertexBufferCPUAddress = NULL;
+    HANDLE_HRESULT(CALL(Map, entity->vertexBuffer, 0, &readRange, &vertexBufferCPUAddress));
+
+    void *indexBufferCPUAddress = NULL;
+    HANDLE_HRESULT(CALL(Map, entity->indexBuffer, 0, &readRange, &indexBufferCPUAddress));
+
     ListIterator rotationOffsetVerticesIterator;
     ListIterator_Init(&rotationOffsetVerticesIterator, rotationOffsetVertices);
     Point *point;
-
-    ListIterator_Next(&rotationOffsetVerticesIterator, (void **)&point);
-    MoveToEx(*hdc, round(location.x + point->x), round(location.y + point->y), NULL);
-
     while (ListIterator_Next(&rotationOffsetVerticesIterator, (void **)&point))
     {
-        LineTo(*hdc, round(location.x + point->x), round(location.y + point->y));
+        Vertex vertex = {{((point->x + location.x) - (SCREEN->screenWidth / 2.0)) / (SCREEN->screenWidth / 2.0), (point->y + location.y - (SCREEN->screenHeight / 2.0)) / (SCREEN->screenHeight / 2.0), 0.0f},
+                         {1.0f, 1.0f, 1.0f, 1.0f}};
+
+        CopyMemory(&((Vertex *)vertexBufferCPUAddress)[rotationOffsetVerticesIterator.currentIteration], &vertex, sizeof(vertex));
+
+        unsigned int index = rotationOffsetVerticesIterator.currentIteration;
+        CopyMemory(&((unsigned int *)indexBufferCPUAddress)[rotationOffsetVerticesIterator.currentIteration], &index, sizeof(index));
     }
 
-    ListIterator_Next(&rotationOffsetVerticesIterator, (void **)&point);
-    LineTo(*hdc, round(location.x + point->x), round(location.y + point->y));
+    unsigned int index = 0UL;
+    CopyMemory(&((unsigned int *)indexBufferCPUAddress)[lengthOfVerticesList], &index, sizeof(index));
+
+    CALL(Unmap, entity->indexBuffer, 0, NULL);
+    CALL(Unmap, entity->vertexBuffer, 0, NULL);
 
     ReadWriteLock_ReleaseReadPermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
 
-#ifdef DEBUG
-    TCHAR buffer[16];
-    _stprintf(buffer, TEXT("%d"), (int)entity->entityNumber);
-    // The text offset for this font is wonky so
-    // location is more accurate when slightly higher and left
-    TextOut(*hdc, location.x - 3, location.y + 4, buffer, _tcslen(buffer));
-#endif
+    entity->vertexBufferView.BufferLocation = CALL(GetGPUVirtualAddress, entity->vertexBuffer);
+    entity->vertexBufferView.StrideInBytes = sizeof(Vertex);
+    entity->vertexBufferView.SizeInBytes = vertexBufferSize;
+
+    entity->indexBufferView.BufferLocation = CALL(GetGPUVirtualAddress, entity->indexBuffer);
+    entity->indexBufferView.SizeInBytes = indexBufferSize;
+    entity->indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+    CALL(IASetIndexBuffer, SCREEN->commandList, &entity->indexBufferView);
+    CALL(IASetVertexBuffers, SCREEN->commandList, 0, 1, &entity->vertexBufferView);
+    CALL(DrawIndexedInstanced, SCREEN->commandList, (lengthOfVerticesList + 1), 1, 0, 0, 0);
+
+    // TODO: Readd debugging entityID
 }
 
 // TODO: Need initiator function so we can get the highest velocity
@@ -408,14 +496,14 @@ void OnTickHandleMovement(Entity *entity)
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))OnTickHandleMovement;
-        task->taskArguments = entity;
+        task->taskArgument = entity;
 
-        List *taskQueue;
-        ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+        List *gamestateTaskQueue;
+        ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
 
-        List_Insert(taskQueue, task);
+        List_Insert(gamestateTaskQueue, task);
 
-        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
     }
 }
 

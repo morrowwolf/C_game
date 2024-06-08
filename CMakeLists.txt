@@ -8,12 +8,15 @@ enable_testing()
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi")
 #set ASAN_SAVE_DUMPS=”MyFileName.dmpx” https://devblogs.microsoft.com/cppblog/asan-for-windows-x64-and-debug-build-support/
 
-#tracy stuff
+#tracy stuff - readd CXX to project languages
 #add_definitions(-DTRACY_ENABLE)
 #set(INCLUDED_FILES ${INCLUDED_FILES} tracy-0.10/public/TracyClient.cpp)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:clatest")
+
 set(INCLUDED_FILES ${INCLUDED_FILES} source/main.c)
 
+set(INCLUDED_FILES  source/main.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list_iterator.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/read_write_lock.c)
@@ -22,9 +25,10 @@ set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/asteroid.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/bullet.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/fighter.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/gamestate.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/graphics/GPU_handler.c)
+set(INCLUDED_FILES ${INCLUDED_FILES} source/helpers.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/tasks.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/window.c)
-set(INCLUDED_FILES ${INCLUDED_FILES} source/windowCPUBuffer.c)
 
 add_executable(C_game WIN32 ${INCLUDED_FILES})
 
