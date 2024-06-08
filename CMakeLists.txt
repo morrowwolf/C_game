@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29.2)
-project(C_game VERSION 0.1.0 LANGUAGES C CXX)
+project(C_game VERSION 0.1.0 LANGUAGES C)
 
 include(CTest)
 enable_testing()
@@ -16,7 +16,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:clatest")
 
 set(INCLUDED_FILES ${INCLUDED_FILES} source/main.c)
 
-set(INCLUDED_FILES  source/main.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list_iterator.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/read_write_lock.c)
