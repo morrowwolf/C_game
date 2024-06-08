@@ -35,20 +35,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	TASKSTATE = calloc(1, sizeof(TaskState));
 
-	List *taskQueue = malloc(sizeof(List));
-	List_Init(taskQueue, NULL);
-	ReadWriteLock_Init(&TASKSTATE->taskQueue, taskQueue);
+	List *systemTaskQueue = malloc(sizeof(List));
+	List_Init(systemTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->systemTaskQueue, systemTaskQueue);
 
-	List_Init(&TASKSTATE->tasksCompleteSyncEvents, NULL);
-	List_Init(&TASKSTATE->tasksQueuedSyncEvents, NULL);
+	List *gamestateTaskQueue = malloc(sizeof(List));
+	List_Init(gamestateTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->gamestateTaskQueue, gamestateTaskQueue);
+
+	List *garbageTaskQueue = malloc(sizeof(List));
+	List_Init(garbageTaskQueue, NULL);
+	ReadWriteLock_Init(&TASKSTATE->garbageTaskQueue, garbageTaskQueue);
+
+	List_Init(&TASKSTATE->gamestateTasksCompleteSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->tasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->systemTasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->gamestateTasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->garbageTasksQueuedSyncEvents, List_CloseHandleOnRemove);
 
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 
 	for (unsigned int i = 0; i < (systemInfo.dwNumberOfProcessors - 1); i++)
 	{
-		List_Insert(&TASKSTATE->tasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
+		List_Insert(&TASKSTATE->gamestateTasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
 		List_Insert(&TASKSTATE->tasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+
+		List_Insert(&TASKSTATE->systemTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->gamestateTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->garbageTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
 		TaskHandlerArgs *taskHandlerArgs = calloc(1, sizeof(TaskHandlerArgs));
 		taskHandlerArgs->taskHandlerID = i;
@@ -83,13 +98,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	free(arrayOfThreadHandles);
 	List_Clear(&threadHandles);
 
-	ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
-	List_Clear(taskQueue);
-	free(taskQueue);
-	ReadWriteLock_Destroy(&TASKSTATE->taskQueue);
+	ReadWriteLock_GetWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
+	List_Clear(garbageTaskQueue);
+	free(garbageTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->garbageTaskQueue);
 
+	ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
+	List_Clear(gamestateTaskQueue);
+	free(gamestateTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->gamestateTaskQueue);
+
+	ReadWriteLock_GetWritePermission(&TASKSTATE->systemTaskQueue, (void **)&systemTaskQueue);
+	List_Clear(systemTaskQueue);
+	free(systemTaskQueue);
+	ReadWriteLock_Destroy(&TASKSTATE->systemTaskQueue);
+
+	List_Clear(&TASKSTATE->garbageTasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->gamestateTasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->systemTasksQueuedSyncEvents);
 	List_Clear(&TASKSTATE->tasksQueuedSyncEvents);
-	List_Clear(&TASKSTATE->tasksCompleteSyncEvents);
+	List_Clear(&TASKSTATE->gamestateTasksCompleteSyncEvents);
 
 	free(TASKSTATE);
 

@@ -6,7 +6,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
     TCHAR szAppName[] = TEXT("C Game");
     WNDCLASS wndclass;
 
-    wndclass.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
+    wndclass.style = 0;
     wndclass.lpfnWndProc = WndProc;
     wndclass.cbClsExtra = 0;
     wndclass.cbWndExtra = 0;
@@ -60,8 +60,11 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                InvalidateRect(SCREEN->windowHandle, NULL, FALSE);
-                UpdateWindow(SCREEN->windowHandle);
+                Task *renderTask = malloc(sizeof(Task));
+                renderTask->task = (void (*)(void *))Directx_Render;
+                renderTask->taskArgument = NULL;
+
+                Task_QueueTask(&TASKSTATE->systemTaskQueue, &TASKSTATE->systemTasksQueuedSyncEvents, renderTask);
 
                 if (SCREEN->nextFrameRefreshTime.QuadPart == 0)
                 {
@@ -142,23 +145,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_PAINT:
-        PAINTSTRUCT ps;
-
-        BeginPaint(hWnd, &ps);
-
-        WndProcHandlePaint();
-
-        EndPaint(hWnd, &ps);
+        ValidateRgn(hWnd, NULL);
 
         return 0;
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
-}
-
-void WndProcHandlePaint()
-{
-    Directx_Render();
 }
 
 void HandleNonGameKeys(UINT_PTR keyCode)

@@ -496,14 +496,14 @@ void OnTickHandleMovement(Entity *entity)
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))OnTickHandleMovement;
-        task->taskArguments = entity;
+        task->taskArgument = entity;
 
-        List *taskQueue;
-        ReadWriteLock_GetWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+        List *gamestateTaskQueue;
+        ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
 
-        List_Insert(taskQueue, task);
+        List_Insert(gamestateTaskQueue, task);
 
-        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->taskQueue, (void **)&taskQueue);
+        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
     }
 }
 

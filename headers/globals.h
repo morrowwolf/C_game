@@ -97,7 +97,7 @@ typedef struct Gamestate
 
     unsigned short exiting; // If the overall process is ending
 
-    RWL_List taskQueue; // list of Task
+    RWL_List gamestateTaskQueue; // list of Task
 
     volatile unsigned __int64 runningEntityID;
 #define GAME_PAUSED 0
@@ -120,8 +120,16 @@ Gamestate *GAMESTATE;
 
 typedef struct TaskState
 {
-    RWL_List taskQueue;
-    List tasksCompleteSyncEvents;
+    RWL_List systemTaskQueue;
+    List systemTasksQueuedSyncEvents;
+
+    RWL_List gamestateTaskQueue;
+    List gamestateTasksQueuedSyncEvents;
+    List gamestateTasksCompleteSyncEvents;
+
+    RWL_List garbageTaskQueue;
+    List garbageTasksQueuedSyncEvents;
+
     List tasksQueuedSyncEvents;
 } TaskState;
 
