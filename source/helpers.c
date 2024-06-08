@@ -1,5 +1,5 @@
 
-#include "../headers/helpers.h"
+#include "helpers.h"
 
 // TODO: Kill this as soon as possible
 void GetCurrentPath(_Out_writes_(pathSize) WCHAR *const path, UINT pathSize)

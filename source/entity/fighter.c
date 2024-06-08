@@ -1,5 +1,5 @@
 
-#include "../../headers/entity/fighter.h"
+#include "fighter.h"
 
 void SpawnPlayerFighter()
 {

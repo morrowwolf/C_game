@@ -1,5 +1,5 @@
 
-#include "../headers/main.h"
+#include "main.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {

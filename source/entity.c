@@ -1,4 +1,4 @@
-#include "../headers/entity.h"
+#include "entity.h"
 
 void ZeroAndInitEntity(Entity **entity)
 {

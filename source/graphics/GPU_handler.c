@@ -1,5 +1,5 @@
 
-#include "../../headers/graphics/GPU_handler.h"
+#include "GPU_handler.h"
 
 void Directx_Init()
 {

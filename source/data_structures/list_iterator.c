@@ -1,5 +1,5 @@
 
-#include "../../headers/data_structures/list_iterator.h"
+#include "list_iterator.h"
 
 void ListIterator_Init(ListIterator *listIterator, List *listToIterate)
 {

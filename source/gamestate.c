@@ -1,5 +1,5 @@
 
-#include "../headers/gamestate.h"
+#include "gamestate.h"
 
 DWORD WINAPI GamestateHandler(LPVOID lpParam)
 {

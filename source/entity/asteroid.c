@@ -1,4 +1,4 @@
-#include "../../headers/entity/asteroid.h"
+#include "asteroid.h"
 
 void SpawnAsteroid()
 {

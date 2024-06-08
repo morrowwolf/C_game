@@ -1,5 +1,5 @@
 
-#include "../../headers/data_structures/read_write_lock.h"
+#include "read_write_lock.h"
 
 void ReadWriteLock_Init(ReadWriteLock *readWriteLock, void *data)
 {

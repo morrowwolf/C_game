@@ -1,5 +1,5 @@
 
-#include "../headers/window.h"
+#include "window.h"
 
 int WindowHandler(HINSTANCE hInstance, int iCmdShow)
 {

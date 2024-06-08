@@ -1,5 +1,5 @@
 
-#include "../../headers/data_structures/list.h"
+#include "list.h"
 
 void List_Init(List *list, void (*destroy)(void *data))
 {

@@ -1,5 +1,5 @@
 
-#include "../../headers/entity/bullet.h"
+#include "bullet.h"
 
 void SpawnFiredBullet(Entity *firingEntity)
 {
