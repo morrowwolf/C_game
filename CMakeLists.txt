@@ -16,6 +16,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:clatest")
 
 set(INCLUDED_FILES ${INCLUDED_FILES} source/main.c)
 
+set(INCLUDED_FILES ${INCLUDED_FILES} source/assets/resources.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/list_iterator.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/data_structures/read_write_lock.c)
@@ -25,7 +26,6 @@ set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/bullet.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/entity/fighter.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/gamestate.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/graphics/GPU_handler.c)
-set(INCLUDED_FILES ${INCLUDED_FILES} source/helpers.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/tasks.c)
 set(INCLUDED_FILES ${INCLUDED_FILES} source/window.c)
 

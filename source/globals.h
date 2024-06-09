@@ -9,7 +9,6 @@
 #define UNICODE
 #define _UNICODE
 
-#include "helpers.h"
 #include <Windows.h>
 #include <windowsx.h>
 #include <winerror.h>
@@ -23,6 +22,7 @@
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
+#include "assets/resources.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -138,8 +138,6 @@ TaskState *TASKSTATE;
 typedef struct Screen
 {
     HWND windowHandle;
-
-    WCHAR assetsPath[512];
 
     float aspectRatio;
     unsigned int screenWidth;

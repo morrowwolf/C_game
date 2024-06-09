@@ -8,7 +8,6 @@ void Directx_Init()
     SCREEN->viewport = (D3D12_VIEWPORT){0.0f, 0.0f, (float)SCREEN->screenWidth, (float)SCREEN->screenHeight, 0.0f, 1.0f};
     SCREEN->scissorRect = (D3D12_RECT){0, 0, (LONG)SCREEN->screenWidth, (LONG)SCREEN->screenHeight};
     SCREEN->rtvDescriptorSize = 0;
-    GetCurrentPath(SCREEN->assetsPath, _countof(SCREEN->assetsPath));
 
     LoadPipeline();
     LoadAssets();
@@ -177,11 +176,8 @@ void LoadAssets()
         const UINT compileFlags = 0;
 #endif
 
-        // TODO: Compile shaders internally
-        const wchar_t *shadersPath = wcscat(SCREEN->assetsPath, L"shaders.hlsl");
-
-        HANDLE_HRESULT(D3DCompileFromFile(shadersPath, NULL, NULL, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, NULL));
-        HANDLE_HRESULT(D3DCompileFromFile(shadersPath, NULL, NULL, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, NULL));
+        HANDLE_HRESULT(D3DCompile(shaderCode, sizeof(shaderCode), NULL, NULL, NULL, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, NULL));
+        HANDLE_HRESULT(D3DCompile(shaderCode, sizeof(shaderCode), NULL, NULL, NULL, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, NULL));
 
         // Define the vertex input layout
         const D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
