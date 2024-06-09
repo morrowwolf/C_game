@@ -15,9 +15,9 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     unsigned short asteroidSpawnDelayCounter = 0;
 
-    while (!GAMESTATE->exiting)
+    while (!SCREEN->exiting)
     {
-        while (!GAMESTATE->running && !GAMESTATE->exiting)
+        while (!GAMESTATE->running && !SCREEN->exiting)
         {
             // I think there's a very slight chance we could miss an escape key here
             // but I really don't want to lock running as it could hang the window.
@@ -105,9 +105,23 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List *deadEntities;
         ReadWriteLock_GetReadPermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
 
+        ListIterator deadEntitiesIterator;
+        ListIterator_Init(&deadEntitiesIterator, deadEntities);
+        Entity *deadEntity;
+        while (ListIterator_Next(&deadEntitiesIterator, (void **)&deadEntity))
+        {
+            Task *garbageTask = malloc(sizeof(Task));
+            garbageTask->task = (void (*)(void *))deadEntity->onDestroy;
+            garbageTask->taskArgument = deadEntity;
+            List_Insert(&tasksToQueue, garbageTask);
+        }
+
         List_Clear(deadEntities);
 
         ReadWriteLock_ReleaseReadPermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
+
+        Task_QueueTasks(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, &tasksToQueue);
+        List_Clear(&tasksToQueue);
 
         GetSystemTimeAsFileTime(&fileTime);
 

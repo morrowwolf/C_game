@@ -95,8 +95,6 @@ typedef struct Gamestate
     ULARGE_INTEGER nextTickTime;
     ULARGE_INTEGER lastTickTimeDifference;
 
-    unsigned short exiting; // If the overall process is ending
-
     RWL_List gamestateTaskQueue; // list of Task
 
     volatile unsigned __int64 runningEntityID;
@@ -111,8 +109,7 @@ typedef struct Gamestate
     HANDLE keyEvent;
     BYTE keys[256]; // 1 is active, 0 is inactive | https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 
-    BYTE mouseButtons[1]; // TODO
-    Point mousePosition;  // This is screen location not world location
+    Point mousePosition; // This is screen location not world location
 
 } Gamestate;
 
@@ -138,6 +135,7 @@ TaskState *TASKSTATE;
 typedef struct Screen
 {
     HWND windowHandle;
+    unsigned short exiting; // If the overall process is ending
 
     float aspectRatio;
     unsigned int screenWidth;
@@ -163,7 +161,10 @@ typedef struct Screen
 
     unsigned int rtvDescriptorSize;
 
-    unsigned int frameIndex;
+    unsigned __int8 frameIndex;
+
+    HANDLE handlingCommandListMutex;
+
     HANDLE fenceEvent;
     ID3D12Fence *fence;
     unsigned __int64 fenceValue;

@@ -31,7 +31,16 @@ void SpawnAsteroid()
 void AsteroidDestroy(Entity *entity)
 {
     List *asteroids;
-    ReadWriteLock_GetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids);
+    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->asteroids, (void **)&asteroids, 5))
+    {
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))AsteroidDestroy;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
 
     List_RemoveElementWithMatchingData(asteroids, entity);
 

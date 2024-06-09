@@ -55,6 +55,12 @@ short ReadWriteLock_GetWritePermissionTimeout(ReadWriteLock *readWriteLock, void
     {
         if (WaitForSingleObject(readWriteLock->readSemaphore, timeout) != WAIT_OBJECT_0)
         {
+            while (i > 0)
+            {
+                ReleaseSemaphore(readWriteLock->readSemaphore, 1, NULL);
+                i--;
+            }
+            ReleaseSemaphore(readWriteLock->writeSemaphore, 1, NULL);
             return FALSE;
         }
     }

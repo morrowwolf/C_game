@@ -44,7 +44,16 @@ void EntityDeath(Entity *entity)
 void EntityDestroy(Entity *entity)
 {
     List *entities;
-    ReadWriteLock_GetWritePermission(&GAMESTATE->entities, (void **)&entities);
+    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->entities, (void **)&entities, 5))
+    {
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))EntityDestroy;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
 
     List_RemoveElementWithMatchingData(entities, entity);
 
@@ -68,12 +77,40 @@ void EntityDestroy(Entity *entity)
     List_Clear(&entity->onRender);
     List_Clear(&entity->onTick);
 
-    // TODO: Handle removal of graphics events better in potential hang situations
-    // We'll likely just add this to task system along with other garbage collection
-    WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
+    EntityDestroyPartTwo(entity);
+}
+
+void EntityDestroyPartTwo(Entity *entity)
+{
+    if (WaitForSingleObject(SCREEN->handlingCommandListMutex, 5) != WAIT_OBJECT_0)
+    {
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))EntityDestroyPartTwo;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
+
+    if (WaitForSingleObject(SCREEN->fenceEvent, 0) != WAIT_OBJECT_0)
+    {
+        ReleaseMutex(SCREEN->handlingCommandListMutex);
+
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))EntityDestroyPartTwo;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
 
     RELEASE(entity->vertexBuffer);
     RELEASE(entity->indexBuffer);
+
+    ReleaseMutex(SCREEN->handlingCommandListMutex);
+
     free(entity);
 }
 
@@ -557,13 +594,18 @@ void HandleMovementCollisionCheck(Entity *entity)
             continue;
         }
 
+        if (otherEntity->alive == ENTITY_DEAD)
+        {
+            continue;
+        }
+
         ReadWriteLock_PermissionRequest permissionRequests[COLLISION_PERMISSION_REQUEST_SIZE] = {
             {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->location, .returnedData = NULL},
             {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->rotationOffsetVertices, .returnedData = NULL}};
 
         while (!ReadWriteLock_GetMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE, COLLISION_PERMISSION_REQUEST_TIMEOUT))
         {
-            if (GAMESTATE->exiting)
+            if (SCREEN->exiting)
             {
                 List_Clear(&entityRotationOffsetVertices);
                 List_Clear(&otherEntitiesPotentialCollision);

@@ -280,6 +280,12 @@ void Directx_Render()
     {
         return;
     }
+
+    if (WaitForSingleObject(SCREEN->handlingCommandListMutex, 0) != WAIT_OBJECT_0)
+    {
+        return;
+    }
+
     ResetEvent(SCREEN->fenceEvent);
 
     SCREEN->frameIndex = CALL(GetCurrentBackBufferIndex, SCREEN->swapChain);
@@ -295,6 +301,7 @@ void Directx_Render()
     HANDLE_HRESULT(CALL(Present, SCREEN->swapChain, 1, 0));
 
     Directx_SetFence();
+    ReleaseMutex(SCREEN->handlingCommandListMutex);
 }
 
 // Make sure to reset the fence

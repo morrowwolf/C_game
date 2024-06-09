@@ -54,9 +54,9 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
     MSG msg;
     msg.wParam = 1;
 
-    while (!GAMESTATE->exiting)
+    while (!SCREEN->exiting)
     {
-        while (!GAMESTATE->exiting && lastMessage)
+        while (!SCREEN->exiting && lastMessage)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
@@ -84,7 +84,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
             {
                 if (msg.message == WM_QUIT)
                 {
-                    GAMESTATE->exiting = TRUE;
+                    SCREEN->exiting = TRUE;
                 }
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
@@ -96,8 +96,6 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
     }
 
     WaitForSingleObject(SCREEN->fenceEvent, INFINITE);
-    CloseHandle(SCREEN->fenceEvent);
-    ReleaseDirectxObjects();
 
     return msg.wParam;
 }

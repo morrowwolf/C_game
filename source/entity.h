@@ -53,6 +53,7 @@ struct EntityInternal
 void ZeroAndInitEntity(Entity **);
 void EntityDeath(Entity *);
 void EntityDestroy(Entity *);
+void EntityDestroyPartTwo(Entity *);
 void EntitySpawn(Entity *);
 
 void CalculateAndSetRotationOffsetVertices(Entity *);

@@ -23,7 +23,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
     HANDLE gamestateTaskCompleteEvent;
     List_GetDataAtPosition(&TASKSTATE->gamestateTasksCompleteSyncEvents, &gamestateTaskCompleteEvent, taskHandlerID);
 
-    while (!GAMESTATE->exiting)
+    while (!SCREEN->exiting)
     {
         WaitForSingleObject(tasksQueuedEvent, INFINITE);
 

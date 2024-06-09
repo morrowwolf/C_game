@@ -33,7 +33,16 @@ void SpawnPlayerFighter()
 void FighterDestroy(Entity *entity)
 {
     List *fighters;
-    ReadWriteLock_GetWritePermission(&GAMESTATE->fighters, (void **)&fighters);
+    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->fighters, (void **)&fighters, 5))
+    {
+        Task *task = calloc(1, sizeof(Task));
+        task->task = (void (*)(void *))FighterDestroy;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
 
     List_RemoveElementWithMatchingData(fighters, entity);
 
