@@ -8,7 +8,13 @@
 void SpawnPlayerFighter();
 void FighterDestroy(Entity *);
 
-void SetupFighterVertices(Entity *);
+void SetupLocationFighter(Entity *);
+void SetupVerticesFighter(Entity *);
+
+void OnDeathResetScreen(Entity *);
+
+void OnMovementWithLocationLockGameEdgeCheckFighter(Entity *, Point *);
+void OnMovementWithLocationLockScreenMovement(Entity *, Point *);
 
 void OnTickKeyAcceleration(Entity *);
 void OnTickKeyFireBullet(Entity *);

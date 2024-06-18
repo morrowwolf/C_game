@@ -87,7 +87,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         ReadWriteLock_ReleaseReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
 
-        if (asteroidCount < MAX_ASTEROIDS && asteroidSpawnDelayCounter >= 100 + (asteroidCount * 4))
+        if (asteroidCount < MAX_ASTEROIDS && asteroidSpawnDelayCounter >= 60)
         {
             SpawnAsteroid();
             asteroidSpawnDelayCounter = 0;

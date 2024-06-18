@@ -38,10 +38,18 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
 
-#define MAX_ASTEROIDS 128
+#define MAX_ASTEROIDS 256
 #define MAX_FIGHTERS 1
 #define DEFAULT_SCREEN_SIZE_X 1600
 #define DEFAULT_SCREEN_SIZE_Y 900
+
+#define MAX_GAME_SPACE_HEIGHT 2000
+#define MAX_GAME_SPACE_WIDTH 2000
+
+#define MAX_GAME_SPACE_RIGHT 1000
+#define MAX_GAME_SPACE_TOP 1000
+#define MAX_GAME_SPACE_LEFT -1000
+#define MAX_GAME_SPACE_BOTTOM -1000
 
 #define DT_INTERNAL_FLAGS (DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP)
 
@@ -54,6 +62,9 @@
 #define SIGNOF(value) \
     ((value >= 0) ? 1 : -1)
 
+// TODO: Make these inline functions so we can breakpoint them
+//  Sick of losing out on information due to failures but no breakpoints
+//  Just pass the __FILE__ and __LINE__ through to the function
 #define HANDLE_HRESULT(result)                                                                            \
     if (FAILED(result))                                                                                   \
     {                                                                                                     \
@@ -86,11 +97,11 @@ typedef struct Gamestate
 {
     __int8 debugMode;
 
+// 10000000ULL is 1 second in 100ns intervals
 // 10000ULL is 1 ms in 100ns intervals
 // 156250ULL is 64 ticks per second
-// Given we are going into subtick territory it may be best
-// to lower this to 32 ticks per second later
 #define DEFAULT_TICK_RATE 156250ULL
+#define SECONDS_TO_TICKS(seconds) (seconds * (10000000ULL / DEFAULT_TICK_RATE))
     unsigned __int64 tickCount;
     ULARGE_INTEGER nextTickTime;
     ULARGE_INTEGER lastTickTimeDifference;
@@ -117,6 +128,7 @@ Gamestate *GAMESTATE;
 
 typedef struct TaskState
 {
+    // Convert all of these to FIFO queues
     RWL_List systemTaskQueue;
     List systemTasksQueuedSyncEvents;
 
@@ -140,6 +152,9 @@ typedef struct Screen
     float aspectRatio;
     unsigned int screenWidth;
     unsigned int screenHeight;
+
+    void *screenEntity; // This is Entity * type but we don't want to include entity.h here (for now)
+    Point screenLocation;
 
     D3D12_VIEWPORT viewport;
     D3D12_RECT scissorRect;

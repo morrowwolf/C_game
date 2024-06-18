@@ -9,12 +9,12 @@ void SpawnAsteroid()
     SetupRandomVelocity(settingUpEntity);
     SetupRandomRotation(settingUpEntity);
     SetupRandomRotationSpeed(settingUpEntity);
-    SetupLocationEdgeOfScreen(settingUpEntity);
-
-    SetupAsteroidVertices(settingUpEntity);
+    SetupLocationAsteroid(settingUpEntity);
+    SetupVerticesAsteroid(settingUpEntity);
     SetupRadius(settingUpEntity);
 
     settingUpEntity->onDestroy = AsteroidDestroy;
+    List_Insert(&settingUpEntity->onMovementWithLocationLock, OnMovementWithLocationLockGameEdgeCheckAsteroid);
     List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
 
@@ -49,11 +49,69 @@ void AsteroidDestroy(Entity *entity)
     EntityDestroy(entity);
 }
 
+#define EXTRA_OFFSCREEN_LOCATION_SPACE 600
+void SetupLocationAsteroid(Entity *settingUpEntity)
+{
+    short deltaX;
+    short deltaY;
+
+    RANDOMIZE(deltaX);
+    RANDOMIZE(deltaY);
+
+    Point *location;
+    ReadWriteLock_GetWritePermission(&settingUpEntity->location, (void **)&location);
+
+    if (settingUpEntity->velocity.x > 0)
+    {
+        if (deltaX >= 0)
+        {
+            location->x = MAX_GAME_SPACE_LEFT - EXTRA_OFFSCREEN_LOCATION_SPACE;
+            location->y = deltaY % (MAX_GAME_SPACE_HEIGHT / 2);
+        }
+        else
+        {
+            location->x = deltaX % (MAX_GAME_SPACE_WIDTH / 2);
+
+            if (settingUpEntity->velocity.y >= 0)
+            {
+                location->y = MAX_GAME_SPACE_BOTTOM - EXTRA_OFFSCREEN_LOCATION_SPACE;
+            }
+            else
+            {
+                location->y = MAX_GAME_SPACE_TOP + EXTRA_OFFSCREEN_LOCATION_SPACE;
+            }
+        }
+    }
+    else
+    {
+        if (deltaX <= 0)
+        {
+            location->x = MAX_GAME_SPACE_RIGHT + EXTRA_OFFSCREEN_LOCATION_SPACE;
+            location->y = deltaY % (MAX_GAME_SPACE_HEIGHT / 2);
+        }
+        else
+        {
+            location->x = deltaX % (MAX_GAME_SPACE_WIDTH / 2);
+
+            if (settingUpEntity->velocity.y >= 0)
+            {
+                location->y = MAX_GAME_SPACE_BOTTOM - EXTRA_OFFSCREEN_LOCATION_SPACE;
+            }
+            else
+            {
+                location->y = MAX_GAME_SPACE_TOP + EXTRA_OFFSCREEN_LOCATION_SPACE;
+            }
+        }
+    }
+
+    ReadWriteLock_ReleaseWritePermission(&settingUpEntity->location, (void **)&location);
+}
+
 #define DEFAULT_AXIS_LENGTH 16
 #define DEFAULT_AXIS_VARIATION 8
 #define AXIS_VARIATION_CALCULATION(value) \
     (value % DEFAULT_AXIS_VARIATION)
-void SetupAsteroidVertices(Entity *settingUpEntity)
+void SetupVerticesAsteroid(Entity *settingUpEntity)
 {
     short deltaX;
     short deltaY;
@@ -105,3 +163,41 @@ void SetupAsteroidVertices(Entity *settingUpEntity)
 #undef DEFAULT_AXIS_LENGTH
 #undef DEFAULT_AXIS_VARIATION
 #undef AXIS_VARIATION_CALCULATION
+
+void OnMovementWithLocationLockGameEdgeCheckAsteroid(Entity *entity, Point *location)
+{
+
+    __int8 outsideOfArea = FALSE;
+
+    if (location->x < MAX_GAME_SPACE_LEFT)
+    {
+        outsideOfArea = TRUE;
+    }
+    else if (location->x > MAX_GAME_SPACE_RIGHT)
+    {
+        outsideOfArea = TRUE;
+    }
+
+    if (location->y < MAX_GAME_SPACE_BOTTOM)
+    {
+        outsideOfArea = TRUE;
+    }
+    else if (location->y > MAX_GAME_SPACE_TOP)
+    {
+        outsideOfArea = TRUE;
+    }
+
+    if (outsideOfArea)
+    {
+        ListElmt *tempListElement;
+        if (!List_GetElementWithMatchingData(&entity->onTick, &tempListElement, OnTickExpire))
+        {
+            entity->lifetime = SECONDS_TO_TICKS(30);
+            List_Insert(&entity->onTick, OnTickExpire);
+        }
+    }
+    else
+    {
+        List_RemoveElementWithMatchingData(&entity->onTick, OnTickExpire);
+    }
+}

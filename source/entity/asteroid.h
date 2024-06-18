@@ -7,8 +7,11 @@
 void SpawnAsteroid();
 void AsteroidDestroy(Entity *);
 
-void SetupAsteroidVertices(Entity *);
+void SetupLocationAsteroid(Entity *);
+void SetupVerticesAsteroid(Entity *);
 
 void OnCollisionDeathAsteroid(Entity *, Entity *);
+
+void OnMovementWithLocationLockGameEdgeCheckAsteroid(Entity *, Point *);
 
 #endif

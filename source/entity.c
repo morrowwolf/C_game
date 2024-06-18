@@ -17,6 +17,7 @@ void ZeroAndInitEntity(Entity **entity)
     List_Init(&(*entity)->onCollision, NULL);
     List_Init(&(*entity)->onDeath, NULL);
     List_Insert(&(*entity)->onDeath, EntityDeath);
+    List_Init(&(*entity)->onMovementWithLocationLock, NULL);
     List_Init(&(*entity)->onRender, NULL);
     List_Init(&(*entity)->onTick, NULL);
     (*entity)->onDestroy = EntityDestroy;
@@ -74,6 +75,7 @@ void EntityDestroy(Entity *entity)
 
     List_Clear(&entity->onCollision);
     List_Clear(&entity->onDeath);
+    List_Clear(&entity->onMovementWithLocationLock);
     List_Clear(&entity->onRender);
     List_Clear(&entity->onTick);
 
@@ -293,75 +295,6 @@ void SetupRandomRotationSpeed(Entity *settingUpEntity)
 #undef MIN_RANDOM_ROTATION_SPEED
 #undef MAX_RANDOM_ROTATION_SPEED
 
-void SetupLocationCenterOfScreen(Entity *settingUpEntity)
-{
-    Point *location;
-    ReadWriteLock_GetWritePermission(&settingUpEntity->location, (void **)&location);
-
-    location->x = DEFAULT_SCREEN_SIZE_X / 2.0;
-    location->y = DEFAULT_SCREEN_SIZE_Y / 2.0;
-
-    ReadWriteLock_ReleaseWritePermission(&settingUpEntity->location, (void **)&location);
-}
-
-#define EXTRA_OFFSCREEN_LOCATION_SPACE 30
-void SetupLocationEdgeOfScreen(Entity *settingUpEntity)
-{
-    short deltaX;
-    short deltaY;
-
-    RANDOMIZE(deltaX);
-    RANDOMIZE(deltaY);
-
-    Point *location;
-    ReadWriteLock_GetWritePermission(&settingUpEntity->location, (void **)&location);
-
-    if (settingUpEntity->velocity.x > 0)
-    {
-        if (deltaX >= 0)
-        {
-            location->x = -EXTRA_OFFSCREEN_LOCATION_SPACE;
-            location->y = abs(deltaY) % DEFAULT_SCREEN_SIZE_Y;
-        }
-        else
-        {
-            if (settingUpEntity->velocity.y >= 0)
-            {
-                location->x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                location->y = -EXTRA_OFFSCREEN_LOCATION_SPACE;
-            }
-            else
-            {
-                location->x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                location->y = DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
-            }
-        }
-    }
-    else
-    {
-        if (deltaX <= 0)
-        {
-            location->x = DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
-            location->y = abs(deltaY) % DEFAULT_SCREEN_SIZE_Y;
-        }
-        else
-        {
-            if (settingUpEntity->velocity.y >= 0)
-            {
-                location->x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                location->y = -EXTRA_OFFSCREEN_LOCATION_SPACE;
-            }
-            else
-            {
-                location->x = abs(deltaX) % DEFAULT_SCREEN_SIZE_X;
-                location->y = DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
-            }
-        }
-    }
-
-    ReadWriteLock_ReleaseWritePermission(&settingUpEntity->location, (void **)&location);
-}
-
 void SetupRadius(Entity *entity)
 {
     double largestDistance = 0;
@@ -481,7 +414,20 @@ void OnRenderUpdate(Entity *entity)
     Point *point;
     while (ListIterator_Next(&rotationOffsetVerticesIterator, (void **)&point))
     {
-        Vertex vertex = {{((point->x + location.x) - (SCREEN->screenWidth / 2.0)) / (SCREEN->screenWidth / 2.0), (point->y + location.y - (SCREEN->screenHeight / 2.0)) / (SCREEN->screenHeight / 2.0), 0.0f},
+        float xPoint = 0;
+        float yPoint = 0;
+        if (SCREEN->screenEntity == entity)
+        {
+            xPoint = point->x / (SCREEN->screenWidth / 2.0);
+            yPoint = point->y / (SCREEN->screenHeight / 2.0);
+        }
+        else
+        {
+            xPoint = (point->x + location.x - SCREEN->screenLocation.x) / (SCREEN->screenWidth / 2.0);
+            yPoint = (point->y + location.y - SCREEN->screenLocation.y) / (SCREEN->screenHeight / 2.0);
+        }
+
+        Vertex vertex = {{xPoint, yPoint, 0.0f},
                          {1.0f, 1.0f, 1.0f, 1.0f}};
 
         CopyMemory(&((Vertex *)vertexBufferCPUAddress)[rotationOffsetVerticesIterator.currentIteration], &vertex, sizeof(vertex));
@@ -511,6 +457,21 @@ void OnRenderUpdate(Entity *entity)
     CALL(DrawIndexedInstanced, SCREEN->commandList, (lengthOfVerticesList + 1), 1, 0, 0, 0);
 
     // TODO: Readd debugging entityID
+}
+
+void OnTickExpire(Entity *entity)
+{
+    entity->lifetime -= 1;
+    if (entity->lifetime <= 0)
+    {
+        ListIterator onDeathIterator;
+        ListIterator_Init(&onDeathIterator, &entity->onDeath);
+        void (*onDeath)(Entity *);
+        while (ListIterator_Next(&onDeathIterator, (void **)&onDeath))
+        {
+            onDeath(entity);
+        }
+    }
 }
 
 // TODO: Need initiator function so we can get the highest velocity
@@ -926,22 +887,12 @@ void HandleMovementVelocity(Entity *entity)
     entityLocation->x += velocityXThisSubTick;
     entityLocation->y += velocityYThisSubTick;
 
-    if (entityLocation->x > DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE)
+    ListIterator entityOnMovementWithLockIterator;
+    ListIterator_Init(&entityOnMovementWithLockIterator, &entity->onMovementWithLocationLock);
+    void (*onMovementWithLock)(Entity *, Point *);
+    while (ListIterator_Next(&entityOnMovementWithLockIterator, (void **)&onMovementWithLock))
     {
-        entityLocation->x -= DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
-    }
-    else if (entityLocation->x < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
-    {
-        entityLocation->x += DEFAULT_SCREEN_SIZE_X + EXTRA_OFFSCREEN_LOCATION_SPACE;
-    }
-
-    if (entityLocation->y > DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE)
-    {
-        entityLocation->y -= DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
-    }
-    else if (entityLocation->y < 0.0 - EXTRA_OFFSCREEN_LOCATION_SPACE)
-    {
-        entityLocation->y += DEFAULT_SCREEN_SIZE_Y + EXTRA_OFFSCREEN_LOCATION_SPACE;
+        onMovementWithLock(entity, entityLocation);
     }
 
     ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&entityLocation);

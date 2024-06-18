@@ -9,7 +9,8 @@
     "xlocale": "c",
     "algorithm": "c",
     "xiosbase": "c",
-    "regex": "c"
+    "regex": "c",
+    "cstdlib": "c"
   },
   "c-cpp-flylint.language": "c",
   "c-cpp-flylint.clang.standard": ["c89", "c99", "c11", "c17", "c18"],

@@ -96,18 +96,3 @@ void OnCollisionKill(Entity *entity, Entity *collidingEntity)
         onDeath(collidingEntity);
     }
 }
-
-void OnTickExpire(Entity *entity)
-{
-    entity->lifetime -= 1;
-    if (entity->lifetime <= 0)
-    {
-        ListIterator onDeathIterator;
-        ListIterator_Init(&onDeathIterator, &entity->onDeath);
-        void (*onDeath)(Entity *);
-        while (ListIterator_Next(&onDeathIterator, (void **)&onDeath))
-        {
-            onDeath(entity);
-        }
-    }
-}

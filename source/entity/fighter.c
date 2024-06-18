@@ -7,13 +7,15 @@ void SpawnPlayerFighter()
 
     ZeroAndInitEntity(&settingUpEntity);
 
-    SetupLocationCenterOfScreen(settingUpEntity);
-
-    SetupFighterVertices(settingUpEntity);
+    SetupLocationFighter(settingUpEntity);
+    SetupVerticesFighter(settingUpEntity);
     SetupRadius(settingUpEntity);
 
     List_Insert(&settingUpEntity->onCollision, OnCollisionDeath);
+    List_Insert(&settingUpEntity->onDeath, OnDeathResetScreen);
     settingUpEntity->onDestroy = FighterDestroy;
+    List_Insert(&settingUpEntity->onMovementWithLocationLock, OnMovementWithLocationLockGameEdgeCheckFighter);
+    List_Insert(&settingUpEntity->onMovementWithLocationLock, OnMovementWithLocationLockScreenMovement);
     List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
     List_Insert(&settingUpEntity->onTick, OnTickReduceFireDelay);
@@ -51,7 +53,18 @@ void FighterDestroy(Entity *entity)
     EntityDestroy(entity);
 }
 
-void SetupFighterVertices(Entity *settingUpEntity)
+void SetupLocationFighter(Entity *settingUpEntity)
+{
+    Point *location;
+    ReadWriteLock_GetWritePermission(&settingUpEntity->location, (void **)&location);
+
+    location->x = abs(MAX_GAME_SPACE_LEFT) - abs(MAX_GAME_SPACE_RIGHT);
+    location->y = abs(MAX_GAME_SPACE_TOP) - abs(MAX_GAME_SPACE_BOTTOM);
+
+    ReadWriteLock_ReleaseWritePermission(&settingUpEntity->location, (void **)&location);
+}
+
+void SetupVerticesFighter(Entity *settingUpEntity)
 {
     short deltaX;
     short deltaY;
@@ -89,6 +102,49 @@ void SetupFighterVertices(Entity *settingUpEntity)
 
     CalculateCentroidAndAlignVertices(settingUpEntity);
     CalculateAndSetRotationOffsetVertices(settingUpEntity);
+}
+
+void OnDeathResetScreen(Entity *entity)
+{
+    UNREFERENCED_PARAMETER(entity);
+
+    SCREEN->screenLocation.x = DEFAULT_SCREEN_SIZE_X / 2.0;
+    SCREEN->screenLocation.y = DEFAULT_SCREEN_SIZE_Y / 2.0;
+}
+
+void OnMovementWithLocationLockGameEdgeCheckFighter(Entity *entity, Point *location)
+{
+    UNREFERENCED_PARAMETER(entity);
+
+    if (location->x < MAX_GAME_SPACE_LEFT)
+    {
+        location->x = MAX_GAME_SPACE_LEFT;
+    }
+    else if (location->x > MAX_GAME_SPACE_RIGHT)
+    {
+        location->x = MAX_GAME_SPACE_RIGHT;
+    }
+
+    if (location->y < MAX_GAME_SPACE_BOTTOM)
+    {
+        location->y = MAX_GAME_SPACE_BOTTOM;
+    }
+    else if (location->y > MAX_GAME_SPACE_TOP)
+    {
+        location->y = MAX_GAME_SPACE_TOP;
+    }
+}
+
+void OnMovementWithLocationLockScreenMovement(Entity *entity, Point *location)
+{
+    UNREFERENCED_PARAMETER(entity);
+
+    if (SCREEN->screenEntity != entity)
+    {
+        SCREEN->screenEntity = entity;
+    }
+    SCREEN->screenLocation.x = location->x;
+    SCREEN->screenLocation.y = location->y;
 }
 
 #define MAIN_DRIVE_ACCELERATION 0.05

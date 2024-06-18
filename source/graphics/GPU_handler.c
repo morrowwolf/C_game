@@ -370,6 +370,9 @@ void PopulateCommandList()
     CALL(ClearRenderTargetView, SCREEN->commandList, rtvHandle, clearColor, 0, NULL);
     CALL(IASetPrimitiveTopology, SCREEN->commandList, D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
 
+    // TODO: Consider priority permission requests
+    //  This would bypass writer right of way so
+    //  we avoid GC getting in the way of frames
     List *entities;
     ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
 

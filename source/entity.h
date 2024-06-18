@@ -39,11 +39,12 @@ struct EntityInternal
     ID3D12Resource *indexBuffer;
     D3D12_INDEX_BUFFER_VIEW indexBufferView;
 
-    List onCollision;            // List of int (*)(Entity *, Entity *)
-    List onDeath;                // List of void (*)(Entity *)
-    void (*onDestroy)(Entity *); // onDestroy would release itself, everyone gets one
-    List onRender;               // List of void (*)(Entity *)
-    List onTick;                 // List of void (*)(Entity *)
+    List onCollision;                // List of int (*)(Entity *, Entity *)
+    List onDeath;                    // List of void (*)(Entity *)
+    void (*onDestroy)(Entity *);     // onDestroy would release itself, everyone gets one
+    List onRender;                   // List of void (*)(Entity *)
+    List onTick;                     // List of void (*)(Entity *)
+    List onMovementWithLocationLock; // List of void (*)(Entity *, Point *)
 
 #ifdef DEBUG
     int colliding;
@@ -66,15 +67,13 @@ void SetupRandomVelocity(Entity *);
 void SetupRandomRotation(Entity *);
 void SetupRandomRotationSpeed(Entity *);
 
-void SetupLocationCenterOfScreen(Entity *);
-void SetupLocationEdgeOfScreen(Entity *);
-
 void SetupRadius(Entity *);
 
 void OnCollisionDeath(Entity *, Entity *);
 
 void OnRenderUpdate(Entity *);
 
+void OnTickExpire(Entity *);
 void OnTickHandleMovement(Entity *);
 
 void HandleMovementCollisionCheck(Entity *);

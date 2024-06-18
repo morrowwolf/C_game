@@ -3,17 +3,13 @@
 
 #include "../entity.h"
 
-void SpawnFiredBullet(Entity *firingEntity);
+void SpawnFiredBullet(Entity *);
 
-void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity);
-void SetupBulletRotation(Entity *settingUpEntity, Entity *firingEntity);
-void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity);
-void SetupBulletVertices(Entity *settingUpEntity);
+void SetupBulletLocation(Entity *, Entity *);
+void SetupBulletRotation(Entity *, Entity *);
+void SetupBulletVelocity(Entity *, Entity *);
+void SetupBulletVertices(Entity *);
 
-void OnCollisionKill(Entity *entity, Entity *collidingEntity);
-
-void OnDeathBullet(Entity *entity);
-
-void OnTickExpire(Entity *entity);
+void OnCollisionKill(Entity *, Entity *);
 
 #endif
