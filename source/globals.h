@@ -43,13 +43,13 @@
 #define DEFAULT_SCREEN_SIZE_X 1600
 #define DEFAULT_SCREEN_SIZE_Y 900
 
-#define MAX_GAME_SPACE_HEIGHT 2000
-#define MAX_GAME_SPACE_WIDTH 2000
+#define MAX_GAME_SPACE_RIGHT 2500
+#define MAX_GAME_SPACE_TOP 2500
+#define MAX_GAME_SPACE_LEFT -2500
+#define MAX_GAME_SPACE_BOTTOM -2500
 
-#define MAX_GAME_SPACE_RIGHT 1000
-#define MAX_GAME_SPACE_TOP 1000
-#define MAX_GAME_SPACE_LEFT -1000
-#define MAX_GAME_SPACE_BOTTOM -1000
+#define MAX_GAME_SPACE_HEIGHT abs(MAX_GAME_SPACE_TOP) + abs(MAX_GAME_SPACE_BOTTOM)
+#define MAX_GAME_SPACE_WIDTH abs(MAX_GAME_SPACE_RIGHT) + abs(MAX_GAME_SPACE_LEFT)
 
 #define DT_INTERNAL_FLAGS (DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP)
 
@@ -128,7 +128,7 @@ Gamestate *GAMESTATE;
 
 typedef struct TaskState
 {
-    // Convert all of these to FIFO queues
+    // TODO: Convert all of these to FIFO queues
     RWL_List systemTaskQueue;
     List systemTasksQueuedSyncEvents;
 
