@@ -128,6 +128,8 @@ Gamestate *GAMESTATE;
 
 typedef struct TaskState
 {
+    unsigned int totalTaskThreads;
+
     // TODO: Convert all of these to FIFO queues
     RWL_List systemTaskQueue;
     List systemTasksQueuedSyncEvents;

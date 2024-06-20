@@ -54,6 +54,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 		threadHandle = CreateThread(NULL, 0, TaskHandler, taskHandlerArgs, 0, NULL);
 		List_Insert(&threadHandles, threadHandle);
+
+		TASKSTATE->totalTaskThreads++;
 	}
 
 	GAMESTATE = calloc(1, sizeof(Gamestate));

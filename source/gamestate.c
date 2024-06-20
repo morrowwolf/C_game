@@ -38,32 +38,18 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List tasksToQueue;
         List_Init(&tasksToQueue, NULL);
 
-        List *entities;
-        ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
-
-        ListIterator entitiesIterator;
-        ListIterator_Init(&entitiesIterator, entities);
-        Entity *entity;
-        while (ListIterator_Next(&entitiesIterator, (void **)&entity))
+        for (unsigned __int32 i = 0; i < TASKSTATE->totalTaskThreads; i++)
         {
-            if (entity->alive == ENTITY_DEAD)
-            {
-                continue;
-            }
+            Gamestate_StartTick_Params *params = malloc(sizeof(Gamestate_StartTick_Params));
+            params->assignedNumber = i;
+            params->maxNumber = TASKSTATE->totalTaskThreads;
 
-            ListIterator onTickIterator;
-            ListIterator_Init(&onTickIterator, &entity->onTick);
-            void (*referenceOnTick)(Entity *);
-            while (ListIterator_Next(&onTickIterator, (void **)&referenceOnTick))
-            {
-                Task *task = malloc(sizeof(Task));
-                task->task = (void (*)(void *))referenceOnTick;
-                task->taskArgument = entity;
-                List_Insert(&tasksToQueue, task);
-            }
+            Task *task = malloc(sizeof(Task));
+            task->task = (void (*)(void *))Gamestate_StartTick;
+            task->taskArgument = params;
+
+            List_Insert(&tasksToQueue, task);
         }
-
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
         Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
         List_Clear(&tasksToQueue);
@@ -151,4 +137,49 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
     free(arrayOfTasksCompleteSyncEvents);
 
     return 0;
+}
+
+void Gamestate_StartTick(Gamestate_StartTick_Params *params)
+{
+    unsigned __int32 assignedNumber = params->assignedNumber;
+    unsigned __int32 maxNumber = params->maxNumber;
+    free(params);
+
+    List tasksToQueue;
+    List_Init(&tasksToQueue, NULL);
+
+    List *entities;
+    ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
+
+    ListIterator entitiesIterator;
+    ListIterator_Init(&entitiesIterator, entities);
+    Entity *entity;
+    while (ListIterator_Next(&entitiesIterator, (void **)&entity))
+    {
+        if (entity->alive == ENTITY_DEAD)
+        {
+            continue;
+        }
+
+        if (entitiesIterator.currentIteration % maxNumber != assignedNumber)
+        {
+            continue;
+        }
+
+        ListIterator onTickIterator;
+        ListIterator_Init(&onTickIterator, &entity->onTick);
+        void (*referenceOnTick)(Entity *);
+        while (ListIterator_Next(&onTickIterator, (void **)&referenceOnTick))
+        {
+            Task *task = malloc(sizeof(Task));
+            task->task = (void (*)(void *))referenceOnTick;
+            task->taskArgument = entity;
+            List_Insert(&tasksToQueue, task);
+        }
+    }
+
+    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
+
+    Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
+    List_Clear(&tasksToQueue);
 }

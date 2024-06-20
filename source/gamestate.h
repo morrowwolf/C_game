@@ -10,4 +10,12 @@
 
 DWORD WINAPI GamestateHandler(LPVOID);
 
+typedef struct Gamestate_StartTick_Params
+{
+    unsigned __int32 assignedNumber;
+    unsigned __int32 maxNumber;
+} Gamestate_StartTick_Params;
+
+void Gamestate_StartTick(Gamestate_StartTick_Params *params);
+
 #endif
