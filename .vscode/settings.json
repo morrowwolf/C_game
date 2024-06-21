@@ -14,6 +14,9 @@
   },
   "c-cpp-flylint.language": "c",
   "c-cpp-flylint.clang.standard": ["c89", "c99", "c11", "c17", "c18"],
-  "c-cpp-flylint.clang.extraArgs": ["-Wno-pragma-once-outside-header"],
+  "c-cpp-flylint.clang.extraArgs": [
+    "-Wno-pragma-once-outside-header",
+    "-Wno-microsoft-anon-tag"
+  ],
   "c-cpp-flylint.cppcheck.standard": ["c89", "c99", "c11", "c17", "c18"]
 }

@@ -67,7 +67,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Init(deadEntities, NULL);
 	List_Init(asteroids, NULL);
 	List_Init(fighters, NULL);
-	ReadWriteLock_Init(&GAMESTATE->entities, entities);
+	ReadWriteLockPriority_Init(&GAMESTATE->entities, entities);
 	ReadWriteLock_Init(&GAMESTATE->deadEntities, deadEntities);
 	ReadWriteLock_Init(&GAMESTATE->asteroids, asteroids);
 	ReadWriteLock_Init(&GAMESTATE->fighters, fighters);
@@ -146,7 +146,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	free(asteroids);
 	free(fighters);
 
-	ReadWriteLock_Destroy(&GAMESTATE->entities);
+	ReadWriteLockPriority_Destroy(&GAMESTATE->entities);
 	ReadWriteLock_Destroy(&GAMESTATE->deadEntities);
 	ReadWriteLock_Destroy(&GAMESTATE->asteroids);
 	ReadWriteLock_Destroy(&GAMESTATE->fighters);

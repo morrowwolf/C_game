@@ -22,6 +22,7 @@
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/read_write_lock.h"
+#include "data_structures/read_write_lock_priority.h"
 #include "assets/resources.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
@@ -112,7 +113,7 @@ typedef struct Gamestate
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1
     unsigned short running; // If the gamestate should be processing
-    RWL_List entities;      // list of Entity
+    RWLP_List entities;     // list of Entity
     RWL_List deadEntities;  // list of Entity, holds memory references to free at end of gamestate cycle
     RWL_List asteroids;     // list of Entity
     RWL_List fighters;      // list of Entity

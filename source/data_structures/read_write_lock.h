@@ -13,7 +13,7 @@
 #include <stdio.h>
 #endif
 
-typedef struct
+typedef struct ReadWriteLock
 {
 #define MAX_WRITERS 1
     HANDLE writeSemaphore;

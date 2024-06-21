@@ -149,7 +149,7 @@ void Gamestate_StartTick(Gamestate_StartTick_Params *params)
     List_Init(&tasksToQueue, NULL);
 
     List *entities;
-    ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
 
     ListIterator entitiesIterator;
     ListIterator_Init(&entitiesIterator, entities);
@@ -178,7 +178,7 @@ void Gamestate_StartTick(Gamestate_StartTick_Params *params)
         }
     }
 
-    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
     Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
     List_Clear(&tasksToQueue);

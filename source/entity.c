@@ -45,7 +45,7 @@ void EntityDeath(Entity *entity)
 void EntityDestroy(Entity *entity)
 {
     List *entities;
-    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->entities, (void **)&entities, 5))
+    if (!ReadWriteLockPriority_GetWritePermissionTimeout(&GAMESTATE->entities, (void **)&entities, 5))
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroy;
@@ -58,7 +58,7 @@ void EntityDestroy(Entity *entity)
 
     List_RemoveElementWithMatchingData(entities, entity);
 
-    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
 
     Point *location;
     ReadWriteLock_GetWritePermission(&entity->location, (void **)&location);
@@ -119,11 +119,11 @@ void EntityDestroyPartTwo(Entity *entity)
 void EntitySpawn(Entity *settingUpEntity)
 {
     List *entities;
-    ReadWriteLock_GetWritePermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_GetWritePermission(&GAMESTATE->entities, (void **)&entities);
 
     List_Insert(entities, settingUpEntity);
 
-    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
 }
 
 void CalculateAndSetRotationOffsetVertices(Entity *entity)
@@ -543,7 +543,7 @@ void HandleMovementCollisionCheck(Entity *entity)
     ReadWriteLock_ReleaseReadPermission(&entity->rotationOffsetVertices, (void **)&referenceEntityRotationOffsetVertices);
 
     List *entities;
-    ReadWriteLock_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
 
     ListIterator entitiesIterator;
     ListIterator_Init(&entitiesIterator, entities);
@@ -592,7 +592,7 @@ void HandleMovementCollisionCheck(Entity *entity)
         ReadWriteLock_ReleaseMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE);
     }
 
-    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
+    ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
     if (otherEntitiesPotentialCollision.length < 1)
     {

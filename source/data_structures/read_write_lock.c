@@ -240,13 +240,11 @@ void SemaphoreDebugOutput(ReadWriteLock *readWriteLock)
         Status = NtQuerySemaphore(readWriteLock->readSemaphore, 0,
                                   &BasicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), NULL);
 
+        TCHAR buffer[256];
+
         if (Status == ERROR_SUCCESS)
         {
-            TCHAR buffer[64];
-
-            _stprintf(buffer, TEXT("ID: %p CurrentCount: %lu\n"), readWriteLock->readSemaphore, BasicInfo.CurrentCount);
-
-            OutputDebugString(buffer);
+            _stprintf(buffer, TEXT("Thread ID: %lu Read Semaphore ID: %p CurrentCount: %lu"), GetCurrentThreadId(), readWriteLock->readSemaphore, BasicInfo.CurrentCount);
         }
 
         Status = NtQuerySemaphore(readWriteLock->writeSemaphore, 0,
@@ -254,9 +252,7 @@ void SemaphoreDebugOutput(ReadWriteLock *readWriteLock)
 
         if (Status == ERROR_SUCCESS)
         {
-            TCHAR buffer[64];
-
-            _stprintf(buffer, TEXT("ID: %p CurrentCount: %lu\n"), readWriteLock->writeSemaphore, BasicInfo.CurrentCount);
+            _stprintf(buffer, TEXT("%s Write Semaphore ID: %p CurrentCount: %lu\n"), buffer, readWriteLock->writeSemaphore, BasicInfo.CurrentCount);
 
             OutputDebugString(buffer);
         }
