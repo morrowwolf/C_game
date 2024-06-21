@@ -18,7 +18,7 @@ typedef struct ReadWriteLock
 #define MAX_WRITERS 1
     HANDLE writeSemaphore;
 
-#define MAX_READERS 20
+#define MAX_READERS 32
     HANDLE readSemaphore;
 
     void *protectedData;
