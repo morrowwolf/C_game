@@ -9,6 +9,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SCREEN = calloc(1, sizeof(Screen));
 	SCREEN->screenWidth = DEFAULT_SCREEN_SIZE_X;
 	SCREEN->screenHeight = DEFAULT_SCREEN_SIZE_Y;
+	SCREEN->screenRadius = sqrt(pow(SCREEN->screenWidth, 2) + pow(SCREEN->screenHeight, 2));
 	SCREEN->screenLocation.x = abs(MAX_GAME_SPACE_LEFT) - abs(MAX_GAME_SPACE_RIGHT);
 	SCREEN->screenLocation.y = abs(MAX_GAME_SPACE_TOP) - abs(MAX_GAME_SPACE_BOTTOM);
 	SCREEN->handlingCommandListMutex = CreateMutex(NULL, FALSE, NULL);

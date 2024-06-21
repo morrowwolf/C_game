@@ -342,6 +342,16 @@ void OnRenderUpdate(Entity *entity)
 
     ReadWriteLock_ReleaseReadPermission(&entity->location, (void **)&referenceLocation);
 
+    double tempX = location.x - SCREEN->screenLocation.x;
+    double tempY = location.y - SCREEN->screenLocation.y;
+
+    double tempRadius = sqrt(pow(tempX, 2) + pow(tempY, 2)) - entity->radius;
+
+    if (tempRadius > SCREEN->screenRadius)
+    {
+        return;
+    }
+
     List *rotationOffsetVertices;
     ReadWriteLock_GetReadPermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
 

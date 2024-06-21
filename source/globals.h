@@ -155,6 +155,7 @@ typedef struct Screen
     float aspectRatio;
     unsigned int screenWidth;
     unsigned int screenHeight;
+    unsigned int screenRadius;
 
     void *screenEntity; // This is Entity * type but we don't want to include entity.h here (for now)
     Point screenLocation;
