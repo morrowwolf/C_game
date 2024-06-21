@@ -328,7 +328,8 @@ void OnCollisionDeath(Entity *entity, Entity *collidingEntity)
 void OnRenderUpdate(Entity *entity)
 {
 
-    // TODO: check against previous size before we release so we reuse the memory if we can
+    // TODO: use root signature to give the GPU a rotation and location
+    // Vertices will then be constants that we can reuse (for the most part)
 
     RELEASE(entity->vertexBuffer);
     RELEASE(entity->indexBuffer);
