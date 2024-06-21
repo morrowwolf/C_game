@@ -274,6 +274,7 @@ void LoadAssets()
     }
 }
 
+// TODO: This should be parallelized
 void Directx_Render()
 {
     if (WaitForSingleObject(SCREEN->fenceEvent, 0) != WAIT_OBJECT_0)
