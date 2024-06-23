@@ -8,6 +8,8 @@ enable_testing()
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi")
 #set ASAN_SAVE_DUMPS=”MyFileName.dmpx” https://devblogs.microsoft.com/cppblog/asan-for-windows-x64-and-debug-build-support/
 
+# AppVerifier
+
 #tracy stuff - readd CXX to project languages
 #add_definitions(-DTRACY_ENABLE)
 #set(INCLUDED_FILES ${INCLUDED_FILES} tracy-0.10/public/TracyClient.cpp)
