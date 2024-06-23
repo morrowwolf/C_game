@@ -13,6 +13,10 @@
 #include <stdio.h>
 #endif
 
+// TODO: All of this needs to be converted to use user-mode objects
+// This includes our mutexes and events throughout the program
+// Turns out most of these objects are kernel level to use for
+// cross process sync when we need just application level sync.
 typedef struct ReadWriteLock
 {
 #define MAX_WRITERS 1
