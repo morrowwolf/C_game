@@ -99,7 +99,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	void *arrayOfThreadHandles;
 	List_GetAsArray(&threadHandles, &arrayOfThreadHandles);
 
-	WaitForMultipleObjects(threadHandles.length, arrayOfThreadHandles, TRUE, INFINITE);
+	while (WaitForMultipleObjects(threadHandles.length, arrayOfThreadHandles, TRUE, 10) == WAIT_TIMEOUT)
+	{
+		ListIterator gamestateTasksCompleteEventsIterator;
+		ListIterator_Init(&gamestateTasksCompleteEventsIterator, &TASKSTATE->gamestateTasksCompleteSyncEvents);
+		HANDLE gamestateTasksCompleteEvent;
+		while (ListIterator_Next(&gamestateTasksCompleteEventsIterator, (void **)&gamestateTasksCompleteEvent))
+		{
+			SetEvent(gamestateTasksCompleteEvent);
+		}
+	}
 
 	free(arrayOfThreadHandles);
 	List_Clear(&threadHandles);

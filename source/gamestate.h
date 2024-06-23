@@ -10,12 +10,11 @@
 
 DWORD WINAPI GamestateHandler(LPVOID);
 
-typedef struct Gamestate_StartTick_Params
-{
-    unsigned __int32 assignedNumber;
-    unsigned __int32 maxNumber;
-} Gamestate_StartTick_Params;
+void Gamestate_ResetGamestateCompleteEvents();
 
-void Gamestate_StartTick(Gamestate_StartTick_Params *params);
+void Gamestate_EntitiesOnTick(ListIteratorThread *);
+
+void Gamestate_AsteroidSpawn();
+void Gamestate_FighterSpawn();
 
 #endif

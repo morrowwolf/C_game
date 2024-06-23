@@ -327,7 +327,7 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
 
 void List_GetAsArray(List *list, void **returnedArray)
 {
-    char **array = malloc(list->length * sizeof(void *));
+    void **array = malloc(list->length * sizeof(void *));
     unsigned int counter = 0;
     ListElmt *referenceElement = list->head;
     while (referenceElement != NULL)

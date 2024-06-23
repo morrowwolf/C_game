@@ -9,11 +9,15 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 
-    HANDLE *arrayOfTasksCompleteSyncEvents;
-    List_GetAsArray(&TASKSTATE->gamestateTasksCompleteSyncEvents, (void **)&arrayOfTasksCompleteSyncEvents);
-    unsigned short syncEventCount = TASKSTATE->gamestateTasksCompleteSyncEvents.length;
+    // We must make a promise that we do not remove anything from
+    // the entities global list while this is being iterated in a tick
+    // We do this via the handlingTick variable in the GAMESTATE global variable
+    ListIteratorThread *entitiesIteratorThread = malloc(sizeof(ListIteratorThread));
+    ListIteratorThread_Init(entitiesIteratorThread, GAMESTATE->entities.protectedData);
 
-    unsigned short asteroidSpawnDelayCounter = 0;
+    void *arrayOfTasksCompleteSyncEvents;
+    List_GetAsArray(&TASKSTATE->gamestateTasksCompleteSyncEvents, (void **)&arrayOfTasksCompleteSyncEvents);
+    unsigned int syncEventCount = TASKSTATE->gamestateTasksCompleteSyncEvents.length;
 
     while (!SCREEN->exiting)
     {
@@ -35,79 +39,45 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         startTime.LowPart = fileTime.dwLowDateTime;
         startTime.HighPart = fileTime.dwHighDateTime;
 
+        entitiesIteratorThread->iterationStarted = FALSE;
+
         List tasksToQueue;
         List_Init(&tasksToQueue, NULL);
 
+        Task *task = malloc(sizeof(Task));
+        task->task = (void (*)(void *))Gamestate_FighterSpawn;
+        task->taskArgument = NULL;
+
+        List_Insert(&tasksToQueue, task);
+
+        task = malloc(sizeof(Task));
+        task->task = (void (*)(void *))Gamestate_AsteroidSpawn;
+        task->taskArgument = NULL;
+
+        List_Insert(&tasksToQueue, task);
+
         for (unsigned __int32 i = 0; i < TASKSTATE->totalTaskThreads; i++)
         {
-            Gamestate_StartTick_Params *params = malloc(sizeof(Gamestate_StartTick_Params));
-            params->assignedNumber = i;
-            params->maxNumber = TASKSTATE->totalTaskThreads;
-
-            Task *task = malloc(sizeof(Task));
-            task->task = (void (*)(void *))Gamestate_StartTick;
-            task->taskArgument = params;
+            task = malloc(sizeof(Task));
+            task->task = (void (*)(void *))Gamestate_EntitiesOnTick;
+            task->taskArgument = entitiesIteratorThread;
 
             List_Insert(&tasksToQueue, task);
         }
 
-        Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
+        List *entities;
+        ReadWriteLockPriority_GetPriorityReadPermission(&GAMESTATE->entities, (void **)&entities);
+
+        InterlockedIncrement((volatile long *)&GAMESTATE->handlingTick);
+
+        ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
+
+        Task_QueueGamestateTasks(&tasksToQueue);
         List_Clear(&tasksToQueue);
-
-        List *fighters;
-        ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
-
-        unsigned int fighterCount = fighters->length;
-
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
-
-        if (fighterCount < MAX_FIGHTERS)
-        {
-            SpawnPlayerFighter();
-        }
-
-        List *asteroids;
-        ReadWriteLock_GetReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
-
-        unsigned int asteroidCount = asteroids->length;
-
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
-
-        if (asteroidCount < MAX_ASTEROIDS && asteroidSpawnDelayCounter >= 60)
-        {
-            SpawnAsteroid();
-            asteroidSpawnDelayCounter = 0;
-        }
-        asteroidSpawnDelayCounter++;
 
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
 
-        for (unsigned short i = 0; i < syncEventCount; i++)
-        {
-            ResetEvent(arrayOfTasksCompleteSyncEvents[i]);
-        }
-
-        // The following should always be last:
-        List *deadEntities;
-        ReadWriteLock_GetReadPermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
-
-        ListIterator deadEntitiesIterator;
-        ListIterator_Init(&deadEntitiesIterator, deadEntities);
-        Entity *deadEntity;
-        while (ListIterator_Next(&deadEntitiesIterator, (void **)&deadEntity))
-        {
-            Task *garbageTask = malloc(sizeof(Task));
-            garbageTask->task = (void (*)(void *))deadEntity->onDestroy;
-            garbageTask->taskArgument = deadEntity;
-            List_Insert(&tasksToQueue, garbageTask);
-        }
-
-        List_Clear(deadEntities);
-
-        ReadWriteLock_ReleaseReadPermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
-
-        Task_QueueTasks(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, &tasksToQueue);
-        List_Clear(&tasksToQueue);
+        InterlockedDecrement((volatile long *)&GAMESTATE->handlingTick);
 
         GetSystemTimeAsFileTime(&fileTime);
 
@@ -134,52 +104,72 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         GAMESTATE->tickCount++;
     }
 
-    free(arrayOfTasksCompleteSyncEvents);
+    ListIteratorThread_Destroy(entitiesIteratorThread);
+    free(entitiesIteratorThread);
 
     return 0;
 }
 
-void Gamestate_StartTick(Gamestate_StartTick_Params *params)
+void Gamestate_EntitiesOnTick(ListIteratorThread *entitiesListIteratorThread)
 {
-    unsigned __int32 assignedNumber = params->assignedNumber;
-    unsigned __int32 maxNumber = params->maxNumber;
-    free(params);
-
-    List tasksToQueue;
-    List_Init(&tasksToQueue, NULL);
-
-    List *entities;
-    ReadWriteLockPriority_GetReadPermission(&GAMESTATE->entities, (void **)&entities);
-
-    ListIterator entitiesIterator;
-    ListIterator_Init(&entitiesIterator, entities);
     Entity *entity;
-    while (ListIterator_Next(&entitiesIterator, (void **)&entity))
+    if (!ListIteratorThread_Next(entitiesListIteratorThread, (void **)&entity))
     {
-        if (entity->alive == ENTITY_DEAD)
-        {
-            continue;
-        }
+        return;
+    }
 
-        if (entitiesIterator.currentIteration % maxNumber != assignedNumber)
-        {
-            continue;
-        }
-
+    if (InterlockedExchange(&entity->alive, entity->alive) == ENTITY_ALIVE)
+    {
         ListIterator onTickIterator;
         ListIterator_Init(&onTickIterator, &entity->onTick);
-        void (*referenceOnTick)(Entity *);
-        while (ListIterator_Next(&onTickIterator, (void **)&referenceOnTick))
+        void (*onTick)(Entity *);
+        while (ListIterator_Next(&onTickIterator, (void **)&onTick))
         {
-            Task *task = malloc(sizeof(Task));
-            task->task = (void (*)(void *))referenceOnTick;
-            task->taskArgument = entity;
-            List_Insert(&tasksToQueue, task);
+            onTick(entity);
         }
     }
 
-    ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
+    Task *task = malloc(sizeof(Task));
+    task->task = (void (*)(void *))Gamestate_EntitiesOnTick;
+    task->taskArgument = entitiesListIteratorThread;
 
-    Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, &tasksToQueue);
-    List_Clear(&tasksToQueue);
+    Task_QueueGamestateTask(task);
+}
+
+#define ASTEROID_SPAWN_DELAY 60
+void Gamestate_AsteroidSpawn()
+{
+    static volatile long asteroidSpawnDelayCounter = 0;
+
+    List *asteroids;
+    ReadWriteLock_GetReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+    unsigned int asteroidCount = asteroids->length;
+
+    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->asteroids, (void **)&asteroids);
+
+    if (asteroidCount < MAX_ASTEROIDS && InterlockedExchangeAcquire(&asteroidSpawnDelayCounter, asteroidSpawnDelayCounter) >= ASTEROID_SPAWN_DELAY)
+    {
+        SpawnAsteroid();
+
+        InterlockedCompareExchangeRelease(&asteroidSpawnDelayCounter, 0, asteroidSpawnDelayCounter);
+        return;
+    }
+
+    InterlockedIncrementRelease(&asteroidSpawnDelayCounter);
+}
+
+void Gamestate_FighterSpawn()
+{
+    List *fighters;
+    ReadWriteLock_GetReadPermission(&GAMESTATE->fighters, (void **)&fighters);
+
+    unsigned int fighterCount = fighters->length;
+
+    ReadWriteLock_ReleaseReadPermission(&GAMESTATE->fighters, (void **)&fighters);
+
+    if (fighterCount < MAX_FIGHTERS)
+    {
+        SpawnPlayerFighter();
+    }
 }

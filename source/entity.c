@@ -34,12 +34,11 @@ void EntityDeath(Entity *entity)
         return;
     }
 
-    List *deadEntities;
-    ReadWriteLock_GetWritePermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
+    Task *task = calloc(1, sizeof(Task));
+    task->task = (void (*)(void *))(entity->onDestroy);
+    task->taskArgument = entity;
 
-    List_Insert(deadEntities, entity);
-
-    ReadWriteLock_ReleaseWritePermission(&GAMESTATE->deadEntities, (void **)&deadEntities);
+    Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
 }
 
 void EntityDestroy(Entity *entity)
@@ -47,7 +46,20 @@ void EntityDestroy(Entity *entity)
     List *entities;
     if (!ReadWriteLockPriority_GetWritePermissionTimeout(&GAMESTATE->entities, (void **)&entities, 5))
     {
-        Task *task = calloc(1, sizeof(Task));
+        Task *task = malloc(sizeof(Task));
+        task->task = (void (*)(void *))EntityDestroy;
+        task->taskArgument = entity;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
+
+    if (InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, GAMESTATE->handlingTick) == TRUE)
+    {
+        ReadWriteLockPriority_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
+
+        Task *task = malloc(sizeof(Task));
         task->task = (void (*)(void *))EntityDestroy;
         task->taskArgument = entity;
 
@@ -507,12 +519,7 @@ void OnTickHandleMovement(Entity *entity)
         task->task = (void (*)(void *))OnTickHandleMovement;
         task->taskArgument = entity;
 
-        List *gamestateTaskQueue;
-        ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
-
-        List_Insert(gamestateTaskQueue, task);
-
-        ReadWriteLock_ReleaseWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
+        Task_QueueGamestateTask(task);
     }
 }
 
@@ -566,7 +573,7 @@ void HandleMovementCollisionCheck(Entity *entity)
             continue;
         }
 
-        if (otherEntity->alive == ENTITY_DEAD)
+        if (InterlockedExchange(&otherEntity->alive, otherEntity->alive) == ENTITY_DEAD)
         {
             continue;
         }

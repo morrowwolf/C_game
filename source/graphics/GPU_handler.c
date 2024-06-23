@@ -380,7 +380,7 @@ void PopulateCommandList()
     Entity *entity;
     while (ListIterator_Next(&entitiesIterator, (void **)&entity))
     {
-        if (entity->alive == ENTITY_DEAD)
+        if (InterlockedExchange(&entity->alive, entity->alive) == ENTITY_DEAD)
         {
             continue;
         }

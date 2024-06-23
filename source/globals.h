@@ -21,6 +21,7 @@
 #include "graphics/D3DX12_globals.h"
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
+#include "data_structures/list_iterator_thread.h"
 #include "data_structures/read_write_lock.h"
 #include "data_structures/read_write_lock_priority.h"
 #include "assets/resources.h"
@@ -107,7 +108,7 @@ typedef struct Gamestate
     ULARGE_INTEGER nextTickTime;
     ULARGE_INTEGER lastTickTimeDifference;
 
-    RWL_List gamestateTaskQueue; // list of Task
+    volatile unsigned __int32 handlingTick;
 
     volatile unsigned __int64 runningEntityID;
 #define GAME_PAUSED 0
@@ -132,14 +133,14 @@ typedef struct TaskState
     unsigned int totalTaskThreads;
 
     // TODO: Convert all of these to FIFO queues
-    RWL_List systemTaskQueue;
+    RWL_List systemTaskQueue; // List of Task
     List systemTasksQueuedSyncEvents;
 
-    RWL_List gamestateTaskQueue;
+    RWL_List gamestateTaskQueue; // List of Task
     List gamestateTasksQueuedSyncEvents;
     List gamestateTasksCompleteSyncEvents;
 
-    RWL_List garbageTaskQueue;
+    RWL_List garbageTaskQueue; // List of Task
     List garbageTasksQueuedSyncEvents;
 
     List tasksQueuedSyncEvents;
