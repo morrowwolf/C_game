@@ -574,7 +574,7 @@ void HandleMovementCollisionCheck(Entity *entity)
             continue;
         }
 
-        if (InterlockedExchange(&otherEntity->alive, otherEntity->alive) == ENTITY_DEAD)
+        if (otherEntity->alive == ENTITY_DEAD)
         {
             continue;
         }

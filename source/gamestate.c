@@ -118,7 +118,7 @@ void Gamestate_EntitiesOnTick(ListIteratorThread *entitiesListIteratorThread)
         return;
     }
 
-    if (InterlockedExchange(&entity->alive, entity->alive) == ENTITY_ALIVE)
+    if (entity->alive == ENTITY_ALIVE)
     {
         ListIterator onTickIterator;
         ListIterator_Init(&onTickIterator, &entity->onTick);
