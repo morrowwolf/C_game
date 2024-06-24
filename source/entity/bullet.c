@@ -32,8 +32,8 @@ void SetupBulletLocation(Entity *settingUpEntity, Entity *firingEntity)
     Point *firingEntityLocation;
     ReadWriteLock_GetReadPermission(&firingEntity->location, (void **)&firingEntityLocation);
 
-    settingUpEntityLocation->x = firingEntityLocation->x + (fabs(firingEntity->velocity.x) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * cos(firingEntity->rotation);
-    settingUpEntityLocation->y = firingEntityLocation->y + (fabs(firingEntity->velocity.y) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
+    settingUpEntityLocation->x = firingEntityLocation->x + (fabs(firingEntity->velocity.x * 2.0) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * cos(firingEntity->rotation);
+    settingUpEntityLocation->y = firingEntityLocation->y + (fabs(firingEntity->velocity.y * 2.0) + (firingEntity->radius * EXTRA_RADIUS_MULTIPLIER)) * sin(firingEntity->rotation);
 
     ReadWriteLock_ReleaseReadPermission(&firingEntity->location, (void **)&firingEntityLocation);
 

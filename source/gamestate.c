@@ -68,7 +68,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List *entities;
         ReadWriteLockPriority_GetPriorityReadPermission(&GAMESTATE->entities, (void **)&entities);
 
-        InterlockedIncrement((volatile long *)&GAMESTATE->handlingTick);
+        InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, TRUE);
 
         ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
@@ -77,7 +77,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
 
-        InterlockedDecrement((volatile long *)&GAMESTATE->handlingTick);
+        InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, FALSE);
 
         GetSystemTimeAsFileTime(&fileTime);
 

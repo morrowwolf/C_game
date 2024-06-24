@@ -15,7 +15,7 @@ void Signal_SetSignal(Signal *signal, long settingSignal)
 
 void Signal_WaitForSignal(Signal *signal, long waitForSignal)
 {
-    while (InterlockedExchangeAcquire(&signal->signal, signal->signal) != waitForSignal)
+    while (InterlockedExchange(&signal->signal, signal->signal) != waitForSignal)
     {
         WaitOnAddress(&signal->signal, &waitForSignal, sizeof(signal->signal), INFINITE);
     }
@@ -23,7 +23,7 @@ void Signal_WaitForSignal(Signal *signal, long waitForSignal)
 
 __int8 Signal_TrySignal(Signal *signal, long waitForSignal)
 {
-    if (InterlockedExchangeAcquire(&signal->signal, signal->signal) == waitForSignal)
+    if (InterlockedExchange(&signal->signal, signal->signal) == waitForSignal)
     {
         return TRUE;
     }
