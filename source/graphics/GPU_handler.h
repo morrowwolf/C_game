@@ -9,7 +9,7 @@ void Directx_Init();
 void LoadPipeline();
 void LoadAssets();
 
-void Directx_Render();
+void Directx_SetupRender();
 
 void Directx_SetFence();
 void Directx_SetFenceAndWait();

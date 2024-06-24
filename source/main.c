@@ -12,7 +12,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SCREEN->screenRadius = sqrt(pow(SCREEN->screenWidth, 2) + pow(SCREEN->screenHeight, 2));
 	SCREEN->screenLocation.x = abs(MAX_GAME_SPACE_LEFT) - abs(MAX_GAME_SPACE_RIGHT);
 	SCREEN->screenLocation.y = abs(MAX_GAME_SPACE_TOP) - abs(MAX_GAME_SPACE_BOTTOM);
-	SCREEN->handlingCommandListMutex = CreateMutex(NULL, FALSE, NULL);
+	SCREEN->preRenderSetupMutex = CreateMutex(NULL, FALSE, NULL);
 
 	TASKSTATE = calloc(1, sizeof(TaskState));
 
@@ -223,7 +223,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	free(TASKSTATE);
 
-	CloseHandle(SCREEN->handlingCommandListMutex);
+	CloseHandle(SCREEN->preRenderSetupMutex);
 	CloseHandle(SCREEN->fenceEvent);
 	ReleaseDirectxObjects();
 	free(SCREEN);

@@ -108,7 +108,7 @@ typedef struct Gamestate
     ULARGE_INTEGER nextTickTime;
     ULARGE_INTEGER lastTickTimeDifference;
 
-    volatile unsigned __int32 handlingTick;
+    volatile unsigned __int32 tickProcessing;
 
     volatile unsigned __int64 runningEntityID;
 #define GAME_PAUSED 0
@@ -183,7 +183,7 @@ typedef struct Screen
 
     unsigned __int8 frameIndex;
 
-    HANDLE handlingCommandListMutex;
+    HANDLE preRenderSetupMutex;
 
     HANDLE fenceEvent;
     ID3D12Fence *fence;

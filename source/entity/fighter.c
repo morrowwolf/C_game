@@ -15,7 +15,6 @@ void SpawnPlayerFighter()
     List_Insert(&settingUpEntity->onDeath, OnDeathResetScreen);
     settingUpEntity->onDestroy = FighterDestroy;
     List_Insert(&settingUpEntity->onMovementWithLocationLock, OnMovementWithLocationLockGameEdgeCheckFighter);
-    List_Insert(&settingUpEntity->onMovementWithLocationLock, OnMovementWithLocationLockScreenMovement);
     List_Insert(&settingUpEntity->onRender, OnRenderUpdate);
     List_Insert(&settingUpEntity->onTick, OnTickHandleMovement);
     List_Insert(&settingUpEntity->onTick, OnTickReduceFireDelay);
@@ -30,6 +29,8 @@ void SpawnPlayerFighter()
     ReadWriteLock_ReleaseWritePermission(&GAMESTATE->fighters, (void **)&fighters);
 
     EntitySpawn(settingUpEntity);
+
+    SCREEN->screenEntity = settingUpEntity;
 }
 
 void FighterDestroy(Entity *entity)
@@ -133,18 +134,6 @@ void OnMovementWithLocationLockGameEdgeCheckFighter(Entity *entity, Point *locat
     {
         location->y = MAX_GAME_SPACE_TOP;
     }
-}
-
-void OnMovementWithLocationLockScreenMovement(Entity *entity, Point *location)
-{
-    UNREFERENCED_PARAMETER(entity);
-
-    if (SCREEN->screenEntity != entity)
-    {
-        SCREEN->screenEntity = entity;
-    }
-    SCREEN->screenLocation.x = location->x;
-    SCREEN->screenLocation.y = location->y;
 }
 
 #define MAIN_DRIVE_ACCELERATION 0.05

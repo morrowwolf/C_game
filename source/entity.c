@@ -55,7 +55,7 @@ void EntityDestroy(Entity *entity)
         return;
     }
 
-    if (InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, GAMESTATE->handlingTick) == TRUE)
+    if (GAMESTATE->tickProcessing == TRUE)
     {
         ReadWriteLockPriority_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
 
@@ -98,7 +98,7 @@ void EntityDestroy(Entity *entity)
 
 void EntityDestroyPartTwo(Entity *entity)
 {
-    if (WaitForSingleObject(SCREEN->handlingCommandListMutex, 5) != WAIT_OBJECT_0)
+    if (WaitForSingleObject(SCREEN->preRenderSetupMutex, 0) != WAIT_OBJECT_0)
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroyPartTwo;
@@ -111,7 +111,7 @@ void EntityDestroyPartTwo(Entity *entity)
 
     if (WaitForSingleObject(SCREEN->fenceEvent, 0) != WAIT_OBJECT_0)
     {
-        ReleaseMutex(SCREEN->handlingCommandListMutex);
+        ReleaseMutex(SCREEN->preRenderSetupMutex);
 
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroyPartTwo;
@@ -125,7 +125,7 @@ void EntityDestroyPartTwo(Entity *entity)
     RELEASE(entity->vertexBuffer);
     RELEASE(entity->indexBuffer);
 
-    ReleaseMutex(SCREEN->handlingCommandListMutex);
+    ReleaseMutex(SCREEN->preRenderSetupMutex);
 
     free(entity);
 }

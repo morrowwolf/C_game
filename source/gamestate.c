@@ -11,7 +11,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     // We must make a promise that we do not remove anything from
     // the entities global list while this is being iterated in a tick
-    // We do this via the handlingTick variable in the GAMESTATE global variable
+    // We do this via the tickProcessing variable in the GAMESTATE global variable
     ListIteratorThread *entitiesIteratorThread = malloc(sizeof(ListIteratorThread));
     ListIteratorThread_Init(entitiesIteratorThread, GAMESTATE->entities.protectedData);
 
@@ -68,7 +68,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List *entities;
         ReadWriteLockPriority_GetPriorityReadPermission(&GAMESTATE->entities, (void **)&entities);
 
-        InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, TRUE);
+        InterlockedExchange((volatile long *)&GAMESTATE->tickProcessing, TRUE);
 
         ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
@@ -77,7 +77,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
 
-        InterlockedExchange((volatile long *)&GAMESTATE->handlingTick, FALSE);
+        InterlockedExchange((volatile long *)&GAMESTATE->tickProcessing, FALSE);
 
         GetSystemTimeAsFileTime(&fileTime);
 

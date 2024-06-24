@@ -61,7 +61,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
                 Task *renderTask = malloc(sizeof(Task));
-                renderTask->task = (void (*)(void *))Directx_Render;
+                renderTask->task = (void (*)(void *))Directx_SetupRender;
                 renderTask->taskArgument = NULL;
 
                 Task_QueueTask(&TASKSTATE->systemTaskQueue, &TASKSTATE->systemTasksQueuedSyncEvents, renderTask);

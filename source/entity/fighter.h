@@ -14,7 +14,6 @@ void SetupVerticesFighter(Entity *);
 void OnDeathResetScreen(Entity *);
 
 void OnMovementWithLocationLockGameEdgeCheckFighter(Entity *, Point *);
-void OnMovementWithLocationLockScreenMovement(Entity *, Point *);
 
 void OnTickKeyAcceleration(Entity *);
 void OnTickKeyFireBullet(Entity *);

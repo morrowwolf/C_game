@@ -274,15 +274,14 @@ void LoadAssets()
     }
 }
 
-// TODO: This should be parallelized
-void Directx_Render()
+void Directx_SetupRender()
 {
     if (WaitForSingleObject(SCREEN->fenceEvent, 0) != WAIT_OBJECT_0)
     {
         return;
     }
 
-    if (WaitForSingleObject(SCREEN->handlingCommandListMutex, 0) != WAIT_OBJECT_0)
+    if (WaitForSingleObject(SCREEN->preRenderSetupMutex, 0) != WAIT_OBJECT_0)
     {
         return;
     }
@@ -302,7 +301,7 @@ void Directx_Render()
     HANDLE_HRESULT(CALL(Present, SCREEN->swapChain, 1, 0));
 
     Directx_SetFence();
-    ReleaseMutex(SCREEN->handlingCommandListMutex);
+    ReleaseMutex(SCREEN->preRenderSetupMutex);
 }
 
 // Make sure to reset the fence
@@ -370,6 +369,25 @@ void PopulateCommandList()
     const float clearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     CALL(ClearRenderTargetView, SCREEN->commandList, rtvHandle, clearColor, 0, NULL);
     CALL(IASetPrimitiveTopology, SCREEN->commandList, D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
+
+    if (SCREEN->screenEntity != NULL)
+    {
+        Point *screenEntityLocation;
+        ReadWriteLock_GetReadPermission(&((Entity *)SCREEN->screenEntity)->location, (void **)&screenEntityLocation);
+
+        SCREEN->screenLocation.x = screenEntityLocation->x;
+        SCREEN->screenLocation.y = screenEntityLocation->y;
+
+        ReadWriteLock_ReleaseReadPermission(&((Entity *)SCREEN->screenEntity)->location, (void **)&screenEntityLocation);
+    }
+
+    // TODO: This should be parallelized via the thread list iterator and task system
+    // I'm going to wait for internal memory management to be set up and Queue to be added
+    // The above doesn't look great either, the gamestate is being updated while we
+    // process the command lists which is changing the location of the object awkwardly
+    // It's either we have a jittery screen or jittery other entities for now but we can
+    // (mostly) fix this once we parallelize the command list processing as it takes precedence
+    // over the gamestate processing
 
     List *entities;
     ReadWriteLockPriority_GetPriorityReadPermission(&GAMESTATE->entities, (void **)&entities);
