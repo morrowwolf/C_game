@@ -44,7 +44,7 @@ void EntityDeath(Entity *entity)
 void EntityDestroy(Entity *entity)
 {
     List *entities;
-    if (!ReadWriteLockPriority_GetWritePermissionTimeout(&GAMESTATE->entities, (void **)&entities, 5))
+    if (!ReadWriteLockPriority_TryGetWritePermission(&GAMESTATE->entities, (void **)&entities))
     {
         Task *task = malloc(sizeof(Task));
         task->task = (void (*)(void *))EntityDestroy;
@@ -75,6 +75,7 @@ void EntityDestroy(Entity *entity)
     Point *location;
     ReadWriteLock_GetWritePermission(&entity->location, (void **)&location);
     free(location);
+    ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&location);
     ReadWriteLock_Destroy(&entity->location);
 
     List_Clear(&entity->baseVertices);
@@ -83,6 +84,7 @@ void EntityDestroy(Entity *entity)
     ReadWriteLock_GetWritePermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
     List_Clear(rotationOffsetVertices);
     free(rotationOffsetVertices);
+    ReadWriteLock_ReleaseWritePermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
     ReadWriteLock_Destroy(&entity->rotationOffsetVertices);
 
     List_Clear(&entity->onCollision);
@@ -524,7 +526,6 @@ void OnTickHandleMovement(Entity *entity)
 }
 
 #define COLLISION_PERMISSION_REQUEST_SIZE 2
-#define COLLISION_PERMISSION_REQUEST_TIMEOUT 5
 
 void HandleMovementCollisionCheck(Entity *entity)
 {
@@ -582,7 +583,7 @@ void HandleMovementCollisionCheck(Entity *entity)
             {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->location, .returnedData = NULL},
             {.permissionType = ReadWriteLock_Read, .readWriteLock = &otherEntity->rotationOffsetVertices, .returnedData = NULL}};
 
-        while (!ReadWriteLock_GetMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE, COLLISION_PERMISSION_REQUEST_TIMEOUT))
+        while (!ReadWriteLock_GetMultiplePermissions(permissionRequests, COLLISION_PERMISSION_REQUEST_SIZE))
         {
             if (SCREEN->exiting)
             {
@@ -773,7 +774,6 @@ void HandleMovementCollisionCheck(Entity *entity)
     List_Clear(&entitiesColliding);
 }
 
-#undef COLLISION_PERMISSION_REQUEST_TIMEOUT
 #undef COLLISION_PERMISSION_REQUEST_SIZE
 
 void CheckCollisionDataHolder_Init(CollisionDataHolder *collisionDataHolder, Entity *entity, Point *location, List *verticesList)

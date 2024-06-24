@@ -5,106 +5,34 @@ void ReadWriteLockPriority_Init(ReadWriteLockPriority *readWriteLockPriority, vo
 {
     ReadWriteLock_Init(&readWriteLockPriority->readWriteLock, protectedData);
 
-    readWriteLockPriority->priorityEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    Signal_Init(&readWriteLockPriority->prioritySignal, SIGNAL_OFF);
 }
 
 void ReadWriteLockPriority_Destroy(ReadWriteLockPriority *readWriteLockPriority)
 {
     ReadWriteLock_Destroy(&readWriteLockPriority->readWriteLock);
-
-    CloseHandle(readWriteLockPriority->priorityEvent);
 }
 
 void ReadWriteLockPriority_GetWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
-
-    while (TRUE)
+    do
     {
-        WaitForSingleObject(readWriteLockPriority->writeSemaphore, INFINITE);
-
-        unsigned int i;
-        for (i = 0; i < MAX_READERS; i++)
-        {
-            if (WaitForMultipleObjects(2, (HANDLE[]){readWriteLockPriority->readSemaphore, readWriteLockPriority->priorityEvent}, FALSE, INFINITE) != WAIT_OBJECT_0)
-            {
-                while (i > 0)
-                {
-                    ReleaseSemaphore(readWriteLockPriority->readSemaphore, 1, NULL);
-                    i--;
-                }
-                ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-                break;
-            }
-        }
-
-        if (i == MAX_READERS)
-        {
-            break;
-        }
-    }
+        Signal_WaitForSignal(&readWriteLockPriority->prioritySignal, SIGNAL_OFF);
+    } while (!TryAcquireSRWLockExclusive(&readWriteLockPriority->SRWLock));
 
     (*protectedData) = readWriteLockPriority->protectedData;
-
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
 }
 
-__int8 ReadWriteLockPriority_GetWritePermissionTimeout(ReadWriteLockPriority *readWriteLockPriority, void **protectedData, unsigned int timeout)
+__int8 ReadWriteLockPriority_TryGetWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
-
-    while (TRUE)
+    if (!Signal_TrySignal(&readWriteLockPriority->prioritySignal, SIGNAL_OFF))
     {
-        if (WaitForSingleObject(readWriteLockPriority->writeSemaphore, timeout) != WAIT_OBJECT_0)
-        {
-            return FALSE;
-        }
+        return FALSE;
+    }
 
-        __int8 breakFor = FALSE;
-        unsigned int i;
-        for (i = 0; i < MAX_READERS; i++)
-        {
-            switch (WaitForMultipleObjects(2, (HANDLE[]){readWriteLockPriority->readSemaphore, readWriteLockPriority->priorityEvent}, FALSE, timeout))
-            {
-            case WAIT_OBJECT_0:
-                continue;
-            case WAIT_OBJECT_0 + 1:
-                while (i > 0)
-                {
-                    ReleaseSemaphore(readWriteLockPriority->readSemaphore, 1, NULL);
-                    i--;
-                }
-                ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-                breakFor = TRUE;
-                break;
-            case WAIT_TIMEOUT:
-                while (i > 0)
-                {
-                    ReleaseSemaphore(readWriteLockPriority->readSemaphore, 1, NULL);
-                    i--;
-                }
-                ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-                return FALSE;
-            default:
-                abort();
-            }
-
-            if (breakFor == TRUE)
-            {
-                break;
-            }
-        }
-
-        if (i == MAX_READERS)
-        {
-            break;
-        }
+    if (!TryAcquireSRWLockExclusive(&readWriteLockPriority->SRWLock))
+    {
+        return FALSE;
     }
 
     (*protectedData) = readWriteLockPriority->protectedData;
@@ -114,82 +42,35 @@ __int8 ReadWriteLockPriority_GetWritePermissionTimeout(ReadWriteLockPriority *re
 
 void ReadWriteLockPriority_ReleaseWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
-
     (*protectedData) = NULL;
 
-    ReleaseSemaphore(readWriteLockPriority->readSemaphore, MAX_READERS, NULL);
-    ReleaseSemaphore(readWriteLockPriority->writeSemaphore, MAX_WRITERS, NULL);
-
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
+    ReleaseSRWLockExclusive(&readWriteLockPriority->SRWLock);
 }
 
 void ReadWriteLockPriority_GetPriorityReadPermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
+    Signal_SetSignal(&readWriteLockPriority->prioritySignal, SIGNAL_ON);
 
-    SetEvent(readWriteLockPriority->priorityEvent);
+    AcquireSRWLockShared(&readWriteLockPriority->SRWLock);
 
-    WaitForSingleObject(readWriteLockPriority->writeSemaphore, INFINITE);
-    WaitForSingleObject(readWriteLockPriority->readSemaphore, INFINITE);
-    ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-
-    ResetEvent(readWriteLockPriority->priorityEvent);
+    Signal_SetSignal(&readWriteLockPriority->prioritySignal, SIGNAL_OFF);
 
     (*protectedData) = readWriteLockPriority->protectedData;
-
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
 }
 
 void ReadWriteLockPriority_GetReadPermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
-
-    __int8 complete = FALSE;
-    while (!complete)
+    do
     {
-        WaitForSingleObject(readWriteLockPriority->writeSemaphore, INFINITE);
-
-        switch (WaitForMultipleObjects(2, (HANDLE[]){readWriteLockPriority->readSemaphore, readWriteLockPriority->priorityEvent}, FALSE, INFINITE))
-        {
-        case WAIT_OBJECT_0:
-            ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-            complete = TRUE;
-            break;
-        default:
-            ReleaseSemaphore(readWriteLockPriority->writeSemaphore, 1, NULL);
-            continue;
-        }
-    }
+        Signal_WaitForSignal(&readWriteLockPriority->prioritySignal, SIGNAL_OFF);
+    } while (!TryAcquireSRWLockShared(&readWriteLockPriority->SRWLock));
 
     (*protectedData) = readWriteLockPriority->protectedData;
-
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
 }
 
 void ReadWriteLockPriority_ReleaseReadPermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData)
 {
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
-
     (*protectedData) = NULL;
 
-    ReleaseSemaphore(readWriteLockPriority->readSemaphore, 1, NULL);
-
-#ifdef DEBUG_SEMAPHORES
-    SemaphoreDebugOutput(&readWriteLockPriority->readWriteLock);
-#endif
+    ReleaseSRWLockShared(&readWriteLockPriority->SRWLock);
 }

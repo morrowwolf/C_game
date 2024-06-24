@@ -53,8 +53,6 @@
 #define MAX_GAME_SPACE_HEIGHT abs(MAX_GAME_SPACE_TOP) + abs(MAX_GAME_SPACE_BOTTOM)
 #define MAX_GAME_SPACE_WIDTH abs(MAX_GAME_SPACE_RIGHT) + abs(MAX_GAME_SPACE_LEFT)
 
-#define DT_INTERNAL_FLAGS (DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP)
-
 #define RANDOMIZE(randomVal)                     \
     BCryptGenRandom(NULL,                        \
                     (unsigned char *)&randomVal, \
@@ -104,6 +102,8 @@ typedef struct Gamestate
 // 156250ULL is 64 ticks per second
 #define DEFAULT_TICK_RATE 156250ULL
 #define SECONDS_TO_TICKS(seconds) (seconds * (10000000ULL / DEFAULT_TICK_RATE))
+#define MILLISECONDS_TO_HUNDREDNANOSECONDS(milliseconds) (milliseconds * 10000LL)
+#define HUNDREDNANOSECONDS_TO_MILLISECONDS(nanoseconds) (nanoseconds / 10000LL)
     unsigned __int64 tickCount;
     ULARGE_INTEGER nextTickTime;
     ULARGE_INTEGER lastTickTimeDifference;

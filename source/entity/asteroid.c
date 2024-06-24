@@ -31,7 +31,7 @@ void SpawnAsteroid()
 void AsteroidDestroy(Entity *entity)
 {
     List *asteroids;
-    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->asteroids, (void **)&asteroids, 5))
+    if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids))
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))AsteroidDestroy;

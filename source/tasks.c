@@ -77,7 +77,7 @@ __int8 Task_HandleTaskQueue(RWL_List *checkedTaskQueue)
     List *taskQueue;
     Task *task;
 
-    if (!ReadWriteLock_GetWritePermissionTimeout(checkedTaskQueue, (void **)&taskQueue, 1))
+    if (!ReadWriteLock_TryGetWritePermission(checkedTaskQueue, (void **)&taskQueue))
     {
         return TRUE;
     }

@@ -35,7 +35,7 @@ void SpawnPlayerFighter()
 void FighterDestroy(Entity *entity)
 {
     List *fighters;
-    if (!ReadWriteLock_GetWritePermissionTimeout(&GAMESTATE->fighters, (void **)&fighters, 5))
+    if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->fighters, (void **)&fighters))
     {
         Task *task = calloc(1, sizeof(Task));
         task->task = (void (*)(void *))FighterDestroy;

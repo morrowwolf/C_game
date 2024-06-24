@@ -3,6 +3,7 @@
 #define READ_WRITE_LOCK_PRIORITY_H_
 
 #include "read_write_lock.h"
+#include "signal.h"
 
 typedef struct ReadWriteLockPriority
 {
@@ -13,7 +14,7 @@ typedef struct ReadWriteLockPriority
         ReadWriteLock readWriteLock;
     };
 
-    HANDLE priorityEvent;
+    Signal prioritySignal;
 } ReadWriteLockPriority;
 
 typedef ReadWriteLockPriority RWLP_List;
@@ -22,7 +23,7 @@ void ReadWriteLockPriority_Init(ReadWriteLockPriority *readWriteLockPriority, vo
 void ReadWriteLockPriority_Destroy(ReadWriteLockPriority *readWriteLockPriority);
 
 void ReadWriteLockPriority_GetWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData);
-__int8 ReadWriteLockPriority_GetWritePermissionTimeout(ReadWriteLockPriority *readWriteLockPriority, void **protectedData, unsigned int timeout);
+__int8 ReadWriteLockPriority_TryGetWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData);
 void ReadWriteLockPriority_ReleaseWritePermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData);
 
 void ReadWriteLockPriority_GetPriorityReadPermission(ReadWriteLockPriority *readWriteLockPriority, void **protectedData);
