@@ -60,7 +60,8 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                Task *renderTask = malloc(sizeof(Task));
+                Task *renderTask;
+                MemoryManager_AllocateMemory((void **)&renderTask, sizeof(Task));
                 renderTask->task = (void (*)(void *))Directx_SetupRender;
                 renderTask->taskArgument = NULL;
 

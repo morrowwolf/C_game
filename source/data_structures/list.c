@@ -51,12 +51,44 @@ int List_InsertNext(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    if ((newElement = malloc(sizeof(ListElmt))) == NULL)
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
+
+    newElement->data = (void *)data;
+
+    if (list->length == 0)
+    {
+        list->head = newElement;
+        list->head->prev = NULL;
+        list->head->next = NULL;
+        list->tail = newElement;
+    }
+    else
+    {
+        newElement->next = element->next;
+        newElement->prev = element;
+
+        if (element->next == NULL)
+        {
+            list->tail = newElement;
+        }
+        else
+        {
+            element->next->prev = newElement;
+        }
+
+        element->next = newElement;
+    }
+
+    list->length++;
+    return TRUE;
+}
+
+int List_InsertElementNext(List *list, ListElmt *element, ListElmt *newElement)
+{
+    if (element == NULL && list->length != 0)
     {
         return FALSE;
     }
-
-    newElement->data = (void *)data;
 
     if (list->length == 0)
     {
@@ -95,10 +127,7 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    if ((newElement = malloc(sizeof(ListElmt))) == NULL)
-    {
-        return FALSE;
-    }
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
 
     newElement->data = (void *)data;
 
@@ -192,7 +221,7 @@ int List_RemoveElement(List *list, ListElmt *element)
         list->destroy(element->data);
     }
 
-    free(element);
+    MemoryManager_DeallocateMemory((void **)&element, sizeof(ListElmt));
     list->length--;
 
     return TRUE;
@@ -327,7 +356,9 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
 
 void List_GetAsArray(List *list, void **returnedArray)
 {
-    void **array = malloc(list->length * sizeof(void *));
+    void **array;
+    // BEFORECOMMIT: This is probably gonna break
+    MemoryManager_AllocateMemory((void **)&array, list->length * sizeof(void *));
     unsigned int counter = 0;
     ListElmt *referenceElement = list->head;
     while (referenceElement != NULL)
@@ -342,7 +373,7 @@ void List_GetAsArray(List *list, void **returnedArray)
 
 void List_FreeOnRemove(void *data)
 {
-    free(data);
+    HeapFree(GetProcessHeap(), 0, data);
 }
 
 void List_CloseHandleOnRemove(void *data)

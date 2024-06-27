@@ -38,7 +38,8 @@ void FighterDestroy(Entity *entity)
     List *fighters;
     if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->fighters, (void **)&fighters))
     {
-        Task *task = calloc(1, sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))FighterDestroy;
         task->taskArgument = entity;
 
@@ -73,28 +74,29 @@ void SetupVerticesFighter(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    Point *baseVertex = malloc(sizeof(Point));
+    Point *baseVertex;
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = 5;
     baseVertex->y = 0;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = -5;
     baseVertex->y = -5;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = -2;
     baseVertex->y = 0;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = -5;
     baseVertex->y = 5;

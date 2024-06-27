@@ -2,7 +2,7 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-// #define DEBUG
+#define DEBUG
 
 #define _USE_MATH_DEFINES
 
@@ -18,13 +18,14 @@
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
+#include "assets/resources.h"
 #include "graphics/D3DX12_globals.h"
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/list_iterator_thread.h"
 #include "data_structures/read_write_lock.h"
 #include "data_structures/read_write_lock_priority.h"
-#include "assets/resources.h"
+#include "memory_manager.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -92,6 +93,8 @@ typedef struct Point
     double x;
     double y;
 } Point, Vector;
+
+void List_DeallocatePointOnRemove(Point *data);
 
 typedef struct Gamestate
 {
