@@ -98,6 +98,7 @@ typedef struct Gamestate
 {
     __int8 debugMode;
 
+#define SECOND_IN_HUNDREDNANOSECONDS 10000000ULL
 // 10000000ULL is 1 second in 100ns intervals
 // 10000ULL is 1 ms in 100ns intervals
 // 156250ULL is 64 ticks per second
@@ -192,7 +193,7 @@ typedef struct Screen
 
     // About 256 frames per second, exact 256 frames would be 390625ULL
 #define DEFAULT_FRAME_REFRESH_RATE 39063ULL
-    ULARGE_INTEGER nextFrameRefreshTime;
+    LARGE_INTEGER nextFrameRefreshTime;
 
 } Screen;
 

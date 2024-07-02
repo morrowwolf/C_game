@@ -9,10 +9,16 @@ void MemoryManager_Initialize()
 
     InitializeCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
 
+    MEMORY_MANAGER->memoryCleanupTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+    LARGE_INTEGER initialTime;
+    initialTime.QuadPart = -SECOND_IN_HUNDREDNANOSECONDS;
+
+    SetWaitableTimer(MEMORY_MANAGER->memoryCleanupTimer, &initialTime, 0, NULL, NULL, 0);
+
     List_Init(&MEMORY_MANAGER->memorySizeInfos, List_MemorySizeInfosOnRemove);
 
     MemorySizeInformation *memoryManagerSizeInfo = calloc(1, sizeof(MemorySizeInformation));
-    MemoryPool_Initialize(&memoryManagerSizeInfo->memoryPool, sizeof(MemoryManager), 0);
+    MemoryPool_Initialize(&memoryManagerSizeInfo->memoryPool, sizeof(MemoryManager), 1);
     memoryManagerSizeInfo->amountOfUsedMemoryChunks = 1;
 
     ListElmt *memoryManagerSizeInfoListElement = calloc(1, sizeof(ListElmt));
@@ -21,7 +27,7 @@ void MemoryManager_Initialize()
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, NULL, memoryManagerSizeInfoListElement);
 
     MemorySizeInformation *memorySizeInfoSizeInfo = calloc(1, sizeof(MemorySizeInformation));
-    MemoryPool_Initialize(&memorySizeInfoSizeInfo->memoryPool, sizeof(MemorySizeInformation), 0);
+    MemoryPool_Initialize(&memorySizeInfoSizeInfo->memoryPool, sizeof(MemorySizeInformation), 1);
     memorySizeInfoSizeInfo->amountOfUsedMemoryChunks = 4;
 
     ListElmt *memorySizeInfoSizeInfoListElement = calloc(1, sizeof(ListElmt));
@@ -30,7 +36,7 @@ void MemoryManager_Initialize()
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail, memorySizeInfoSizeInfoListElement);
 
     MemorySizeInformation *listSizeInfo = calloc(1, sizeof(MemorySizeInformation));
-    MemoryPool_Initialize(&listSizeInfo->memoryPool, sizeof(List), 0);
+    MemoryPool_Initialize(&listSizeInfo->memoryPool, sizeof(List), 1);
     listSizeInfo->amountOfUsedMemoryChunks = 0;
 
     ListElmt *listSizeInfoListElement = calloc(1, sizeof(ListElmt));
@@ -39,7 +45,7 @@ void MemoryManager_Initialize()
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail, listSizeInfoListElement);
 
     MemorySizeInformation *listElmtSizeInfo = calloc(1, sizeof(MemorySizeInformation));
-    MemoryPool_Initialize(&listElmtSizeInfo->memoryPool, sizeof(ListElmt), 0);
+    MemoryPool_Initialize(&listElmtSizeInfo->memoryPool, sizeof(ListElmt), 1);
     listElmtSizeInfo->amountOfUsedMemoryChunks = 4;
 
     ListElmt *listElmtSizeInfoListElmt = calloc(1, sizeof(ListElmt));
@@ -98,7 +104,7 @@ void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
 
     MemorySizeInformation *newMemorySizeInfo;
     MemoryManager_AllocateMemory((void **)&newMemorySizeInfo, sizeof(MemorySizeInformation));
-    MemoryPool_Initialize(&newMemorySizeInfo->memoryPool, size, 0);
+    MemoryPool_Initialize(&newMemorySizeInfo->memoryPool, size, 1);
     newMemorySizeInfo->amountOfUsedMemoryChunks = 1;
     (*passbackPointer) = calloc(1, size);
 
@@ -187,12 +193,15 @@ void MemoryManager_Cleanup()
 
         if (normalizedAllocatedCount == 0 && normalizedDeallocatedCount == 0)
         {
-            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, 0);
+            if (memorySizeInfo->memoryPool.maxAmountOfMemoryChunks > 1)
+            {
+                MemoryPool_ResizePool(&memorySizeInfo->memoryPool, 1);
+            }
             continue;
         }
         else if (normalizedFailedToStoreCount > 0)
         {
-            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, memorySizeInfo->memoryPool.maxAmountOfMemoryChunks + (normalizedFailedToStoreCount * 2));
+            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, memorySizeInfo->memoryPool.maxAmountOfMemoryChunks * 2);
             continue;
         }
         else if (memorySizeInfo->memoryPool.maxAmountOfMemoryChunks > normalizedDeallocatedCount * 2)

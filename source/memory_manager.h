@@ -15,6 +15,10 @@ typedef struct MemoryManager
     List memorySizeInfos; // List of MemorySizeInformation
 
     unsigned long long lastCleanupTick;
+
+#define MEMORY_MANAGER_CLEANUP_INTERVAL 1000
+    HANDLE memoryCleanupTimer;
+    LARGE_INTEGER nextMemoryCleanupTime;
 } MemoryManager;
 
 extern MemoryManager *MEMORY_MANAGER;

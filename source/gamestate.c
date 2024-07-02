@@ -77,12 +77,6 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         Task_QueueGamestateTasks(&tasksToQueue);
         List_Clear(&tasksToQueue);
 
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
-        task->task = (void (*)(void *))MemoryManager_Cleanup;
-        task->taskArgument = NULL;
-
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
-
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
 
         InterlockedExchange((volatile long *)&GAMESTATE->tickProcessing, FALSE);
