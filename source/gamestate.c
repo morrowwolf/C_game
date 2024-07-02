@@ -90,7 +90,14 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
             GAMESTATE->nextTickTime.QuadPart = endTime.QuadPart;
         }
 
-        GAMESTATE->lastTickTimeDifference.QuadPart = endTime.QuadPart - startTime.QuadPart;
+        GAMESTATE->lastTickTimeDifference = endTime.QuadPart - startTime.QuadPart;
+
+#ifdef DEBUG_TICKS
+        TCHAR buffer[124];
+        _stprintf(buffer, TEXT("Tick time: (%f)\n"), HUNDREDNANOSECONDS_TO_MILLISECONDS(GAMESTATE->lastTickTimeDifference));
+
+        OutputDebugString(buffer);
+#endif
 
         GAMESTATE->nextTickTime.QuadPart += DEFAULT_TICK_RATE;
 

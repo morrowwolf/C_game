@@ -3,6 +3,7 @@
 #define GLOBALS_H_
 
 // #define DEBUG
+// #define DEBUG_TICKS
 
 #define _USE_MATH_DEFINES
 
@@ -106,7 +107,7 @@ typedef struct Gamestate
 #define HUNDREDNANOSECONDS_TO_MILLISECONDS(nanoseconds) (nanoseconds / 10000LL)
     unsigned __int64 tickCount;
     ULARGE_INTEGER nextTickTime;
-    ULARGE_INTEGER lastTickTimeDifference;
+    double lastTickTimeDifference;
 
     volatile unsigned __int32 tickProcessing;
 
