@@ -35,6 +35,7 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data);
 
 int List_RemovePosition(List *list, int position);
 int List_RemoveElement(List *list, ListElmt *element);
+int List_RemoveElementHardFree(List *list, ListElmt *element);
 int List_RemoveElementWithMatchingData(List *list, void *data);
 
 int List_GetDataPosition(List *list, void *data);

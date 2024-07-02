@@ -243,6 +243,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	ReleaseDirectxObjects();
 	MemoryManager_DeallocateMemory((void **)&SCREEN, sizeof(Screen));
 
+	MemoryManager_Destroy();
+
 #ifdef DEBUG
 	TCHAR buffer[64];
 	_stprintf(buffer, TEXT("Memory leak status: (%s)"), _CrtDumpMemoryLeaks() ? TEXT("TRUE") : TEXT("FALSE"));

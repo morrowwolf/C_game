@@ -3,6 +3,7 @@
 #define GLOBALS_H_
 
 #define DEBUG
+#define DEBUG_TICKS
 
 #define _USE_MATH_DEFINES
 
@@ -25,7 +26,6 @@
 #include "data_structures/list_iterator_thread.h"
 #include "data_structures/read_write_lock.h"
 #include "data_structures/read_write_lock_priority.h"
-#include "memory_manager.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -94,8 +94,6 @@ typedef struct Point
     double y;
 } Point, Vector;
 
-void List_DeallocatePointOnRemove(Point *data);
-
 typedef struct Gamestate
 {
     __int8 debugMode;
@@ -107,13 +105,13 @@ typedef struct Gamestate
 #define SECONDS_TO_TICKS(seconds) (seconds * (10000000ULL / DEFAULT_TICK_RATE))
 #define MILLISECONDS_TO_HUNDREDNANOSECONDS(milliseconds) (milliseconds * 10000LL)
 #define HUNDREDNANOSECONDS_TO_MILLISECONDS(nanoseconds) (nanoseconds / 10000LL)
-    unsigned __int64 tickCount;
+    volatile unsigned long long currentTick;
     ULARGE_INTEGER nextTickTime;
-    ULARGE_INTEGER lastTickTimeDifference;
+    double lastTickTimeDifference;
 
-    volatile unsigned __int32 tickProcessing;
+    volatile unsigned long tickProcessing;
 
-    volatile unsigned __int64 runningEntityID;
+    volatile unsigned long long runningEntityID;
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1
     unsigned short running; // If the gamestate should be processing

@@ -221,8 +221,53 @@ int List_RemoveElement(List *list, ListElmt *element)
         list->destroy(element->data);
     }
 
-    MemoryManager_DeallocateMemory((void **)&element, sizeof(ListElmt));
     list->length--;
+    MemoryManager_DeallocateMemory((void **)&element, sizeof(ListElmt));
+
+    return TRUE;
+}
+
+int List_RemoveElementHardFree(List *list, ListElmt *element)
+{
+    if (element == NULL || list->length == 0)
+    {
+        return FALSE;
+    }
+
+    if (element == list->head)
+    {
+        list->head = element->next;
+
+        if (list->head == NULL)
+        {
+            list->tail = NULL;
+        }
+        else
+        {
+            element->next->prev = NULL;
+        }
+    }
+    else
+    {
+        element->prev->next = element->next;
+
+        if (element->next == NULL)
+        {
+            list->tail = element->prev;
+        }
+        else
+        {
+            element->next->prev = element->prev;
+        }
+    }
+
+    if (list->destroy != NULL)
+    {
+        list->destroy(element->data);
+    }
+
+    list->length--;
+    free(element);
 
     return TRUE;
 }
@@ -373,7 +418,7 @@ void List_GetAsArray(List *list, void **returnedArray)
 
 void List_FreeOnRemove(void *data)
 {
-    HeapFree(GetProcessHeap(), 0, data);
+    free(data);
 }
 
 void List_CloseHandleOnRemove(void *data)

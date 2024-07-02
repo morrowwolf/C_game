@@ -77,6 +77,12 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         Task_QueueGamestateTasks(&tasksToQueue);
         List_Clear(&tasksToQueue);
 
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        task->task = (void (*)(void *))MemoryManager_Cleanup;
+        task->taskArgument = NULL;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
 
         InterlockedExchange((volatile long *)&GAMESTATE->tickProcessing, FALSE);
@@ -92,7 +98,14 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
             GAMESTATE->nextTickTime.QuadPart = endTime.QuadPart;
         }
 
-        GAMESTATE->lastTickTimeDifference.QuadPart = endTime.QuadPart - startTime.QuadPart;
+        GAMESTATE->lastTickTimeDifference = endTime.QuadPart - startTime.QuadPart;
+
+#ifdef DEBUG_TICKS
+        TCHAR buffer[124];
+        _stprintf(buffer, TEXT("Tick time: (%f)\n"), HUNDREDNANOSECONDS_TO_MILLISECONDS(GAMESTATE->lastTickTimeDifference));
+
+        OutputDebugString(buffer);
+#endif
 
         GAMESTATE->nextTickTime.QuadPart += DEFAULT_TICK_RATE;
 
@@ -103,7 +116,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         WaitForSingleObject(hTimer, INFINITE);
 
-        GAMESTATE->tickCount++;
+        InterlockedIncrement64((volatile long long *)&GAMESTATE->currentTick);
     }
 
     ListIteratorThread_Destroy(entitiesIteratorThread);

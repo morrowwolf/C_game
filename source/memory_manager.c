@@ -5,51 +5,44 @@ MemoryManager *MEMORY_MANAGER;
 
 void MemoryManager_Initialize()
 {
-    HANDLE processHeap = GetProcessHeap();
-
-    MEMORY_MANAGER = HeapAlloc(processHeap, HEAP_ALLOC_OPTIONS, sizeof(MemoryManager));
-    MEMORY_MANAGER->heap = processHeap;
+    MEMORY_MANAGER = calloc(1, sizeof(MemoryManager));
 
     InitializeCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
 
     List_Init(&MEMORY_MANAGER->memorySizeInfos, List_MemorySizeInfosOnRemove);
 
-    MemorySizeInformation *memoryManagerSizeInfo = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(MemorySizeInformation));
-    memoryManagerSizeInfo->memorySize = sizeof(MemoryManager);
-    List_Init(&memoryManagerSizeInfo->storedUnusedMemoryChunks, NULL);
+    MemorySizeInformation *memoryManagerSizeInfo = calloc(1, sizeof(MemorySizeInformation));
+    MemoryPool_Initialize(&memoryManagerSizeInfo->memoryPool, sizeof(MemoryManager), 0);
     memoryManagerSizeInfo->amountOfUsedMemoryChunks = 1;
 
-    ListElmt *memoryManagerSizeInfoListElement = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(ListElmt));
+    ListElmt *memoryManagerSizeInfoListElement = calloc(1, sizeof(ListElmt));
     memoryManagerSizeInfoListElement->data = memoryManagerSizeInfo;
 
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, NULL, memoryManagerSizeInfoListElement);
 
-    MemorySizeInformation *memorySizeInfoSizeInfo = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(MemorySizeInformation));
-    memorySizeInfoSizeInfo->memorySize = sizeof(MemorySizeInformation);
-    List_Init(&memorySizeInfoSizeInfo->storedUnusedMemoryChunks, NULL);
+    MemorySizeInformation *memorySizeInfoSizeInfo = calloc(1, sizeof(MemorySizeInformation));
+    MemoryPool_Initialize(&memorySizeInfoSizeInfo->memoryPool, sizeof(MemorySizeInformation), 0);
     memorySizeInfoSizeInfo->amountOfUsedMemoryChunks = 4;
 
-    ListElmt *memorySizeInfoSizeInfoListElement = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(ListElmt));
+    ListElmt *memorySizeInfoSizeInfoListElement = calloc(1, sizeof(ListElmt));
     memorySizeInfoSizeInfoListElement->data = memorySizeInfoSizeInfo;
 
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail, memorySizeInfoSizeInfoListElement);
 
-    MemorySizeInformation *listSizeInfo = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(MemorySizeInformation));
-    listSizeInfo->memorySize = sizeof(List);
-    List_Init(&listSizeInfo->storedUnusedMemoryChunks, NULL);
+    MemorySizeInformation *listSizeInfo = calloc(1, sizeof(MemorySizeInformation));
+    MemoryPool_Initialize(&listSizeInfo->memoryPool, sizeof(List), 0);
     listSizeInfo->amountOfUsedMemoryChunks = 0;
 
-    ListElmt *listSizeInfoListElement = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(ListElmt));
+    ListElmt *listSizeInfoListElement = calloc(1, sizeof(ListElmt));
     listSizeInfoListElement->data = listSizeInfo;
 
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail, listSizeInfoListElement);
 
-    MemorySizeInformation *listElmtSizeInfo = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(MemorySizeInformation));
-    listElmtSizeInfo->memorySize = sizeof(ListElmt);
-    List_Init(&listElmtSizeInfo->storedUnusedMemoryChunks, NULL);
+    MemorySizeInformation *listElmtSizeInfo = calloc(1, sizeof(MemorySizeInformation));
+    MemoryPool_Initialize(&listElmtSizeInfo->memoryPool, sizeof(ListElmt), 0);
     listElmtSizeInfo->amountOfUsedMemoryChunks = 4;
 
-    ListElmt *listElmtSizeInfoListElmt = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, sizeof(ListElmt));
+    ListElmt *listElmtSizeInfoListElmt = calloc(1, sizeof(ListElmt));
     listElmtSizeInfoListElmt->data = listElmtSizeInfo;
 
     List_InsertElementNext(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail, listElmtSizeInfoListElmt);
@@ -59,11 +52,14 @@ void MemoryManager_Destroy()
 {
     EnterCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
 
-    List_Clear(&MEMORY_MANAGER->memorySizeInfos);
+    while (MEMORY_MANAGER->memorySizeInfos.length > 0)
+    {
+        List_RemoveElementHardFree(&MEMORY_MANAGER->memorySizeInfos, MEMORY_MANAGER->memorySizeInfos.tail);
+    }
 
     DeleteCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
 
-    HeapFree(MEMORY_MANAGER->heap, 0, MEMORY_MANAGER);
+    free(MEMORY_MANAGER);
 }
 
 void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
@@ -76,30 +72,24 @@ void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
 
     while (ListIterator_Next(&memorySizeInfosIterator, (void **)&memorySizeInfo))
     {
-        if (memorySizeInfo->memorySize != size)
+        if (memorySizeInfo->memoryPool.memoryChunkSize != size)
         {
             continue;
         }
 
-        List *memoryChunks = &memorySizeInfo->storedUnusedMemoryChunks;
+        memorySizeInfo->allocatedCount += 1;
 
-        ListElmt *memoryChunkElement = memoryChunks->tail;
-
-        if (memoryChunkElement != NULL)
+        void *memoryChunk = NULL;
+        if (MemoryPool_TakeMemory(&memorySizeInfo->memoryPool, &memoryChunk))
         {
-            (*passbackPointer) = memoryChunkElement->data;
-            List_RemoveElement(memoryChunks, memoryChunkElement);
-
+            (*passbackPointer) = memoryChunk;
             memorySizeInfo->amountOfUsedMemoryChunks += 1;
 
             LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
             return;
         }
 
-        void *memoryChunk = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, size);
-
-        (*passbackPointer) = memoryChunk;
-
+        (*passbackPointer) = calloc(1, size);
         memorySizeInfo->amountOfUsedMemoryChunks += 1;
 
         LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
@@ -108,10 +98,9 @@ void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
 
     MemorySizeInformation *newMemorySizeInfo;
     MemoryManager_AllocateMemory((void **)&newMemorySizeInfo, sizeof(MemorySizeInformation));
-    newMemorySizeInfo->memorySize = size;
-    List_Init(&newMemorySizeInfo->storedUnusedMemoryChunks, NULL);
+    MemoryPool_Initialize(&newMemorySizeInfo->memoryPool, size, 0);
     newMemorySizeInfo->amountOfUsedMemoryChunks = 1;
-    (*passbackPointer) = HeapAlloc(MEMORY_MANAGER->heap, HEAP_ALLOC_OPTIONS, size);
+    (*passbackPointer) = calloc(1, size);
 
     List_Insert(&MEMORY_MANAGER->memorySizeInfos, newMemorySizeInfo);
 
@@ -128,21 +117,23 @@ void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size)
 
     while (ListIterator_Next(&memorySizeInfosIterator, (void **)&memorySizeInfo))
     {
-        if (memorySizeInfo->memorySize != size)
+        if (memorySizeInfo->memoryPool.memoryChunkSize != size)
         {
             continue;
         }
 
-        if (memorySizeInfo->storedUnusedMemoryChunks.length >= (memorySizeInfo->amountOfUsedMemoryChunks * 0.5))
+        memorySizeInfo->deallocatedCount += 1;
+
+        if (MemoryPool_StoreMemory(&memorySizeInfo->memoryPool, (*memoryPointer)))
         {
-            HeapFree(MEMORY_MANAGER->heap, 0, (*memoryPointer));
             memorySizeInfo->amountOfUsedMemoryChunks -= 1;
             LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
             return;
         }
 
-        List_Insert(&memorySizeInfo->storedUnusedMemoryChunks, (*memoryPointer));
+        free((*memoryPointer));
         memorySizeInfo->amountOfUsedMemoryChunks -= 1;
+        memorySizeInfo->failedToStoreCount += 1;
         LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
         return;
     }
@@ -151,17 +142,78 @@ void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size)
     abort();
 }
 
+void MemoryManager_Cleanup()
+{
+
+    if (GAMESTATE->tickProcessing)
+    {
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        task->task = (void (*)(void *))MemoryManager_Cleanup;
+        task->taskArgument = NULL;
+
+        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+
+        return;
+    }
+
+    EnterCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
+
+    unsigned long long currentTick = GAMESTATE->currentTick;
+
+    if (currentTick <= MEMORY_MANAGER->lastCleanupTick)
+    {
+        LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
+        return;
+    }
+
+    unsigned long long deltaTicks = currentTick - MEMORY_MANAGER->lastCleanupTick;
+
+    MEMORY_MANAGER->lastCleanupTick = currentTick;
+
+    ListIterator memorySizeInfosIterator;
+    ListIterator_Init(&memorySizeInfosIterator, &MEMORY_MANAGER->memorySizeInfos);
+    MemorySizeInformation *memorySizeInfo;
+
+    while (ListIterator_Next(&memorySizeInfosIterator, (void **)&memorySizeInfo))
+    {
+        unsigned int normalizedAllocatedCount = memorySizeInfo->allocatedCount / deltaTicks;
+        unsigned int normalizedDeallocatedCount = memorySizeInfo->deallocatedCount / deltaTicks;
+        unsigned int normalizedFailedToStoreCount = memorySizeInfo->failedToStoreCount / deltaTicks;
+
+        memorySizeInfo->allocatedCount = 0;
+        memorySizeInfo->deallocatedCount = 0;
+        memorySizeInfo->failedToStoreCount = 0;
+
+        if (normalizedAllocatedCount == 0 && normalizedDeallocatedCount == 0)
+        {
+            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, 0);
+            continue;
+        }
+        else if (normalizedFailedToStoreCount > 0)
+        {
+            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, memorySizeInfo->memoryPool.maxAmountOfMemoryChunks + (normalizedFailedToStoreCount * 2));
+            continue;
+        }
+        else if (memorySizeInfo->memoryPool.maxAmountOfMemoryChunks > normalizedDeallocatedCount * 2)
+        {
+            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, normalizedDeallocatedCount);
+            continue;
+        }
+    }
+
+    LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
+}
+
 void List_MemorySizeInfosOnRemove(void *data)
 {
     MemorySizeInformation *memorySizeInfo = (MemorySizeInformation *)data;
-    ListIterator memoryChunksIterator;
-    ListIterator_Init(&memoryChunksIterator, &memorySizeInfo->storedUnusedMemoryChunks);
-    void *memoryChunk;
 
-    while (ListIterator_Next(&memoryChunksIterator, (void **)&memoryChunk))
-    {
-        HeapFree(MEMORY_MANAGER->heap, 0, memoryChunk);
-    }
+    MemoryPool_Destroy(&memorySizeInfo->memoryPool);
+    free(memorySizeInfo);
+}
 
-    HeapFree(MEMORY_MANAGER->heap, 0, memorySizeInfo);
+void List_DeallocatePointOnRemove(Point *data)
+{
+    MemoryManager_DeallocateMemory((void **)&data, sizeof(Point));
 }

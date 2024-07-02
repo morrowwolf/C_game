@@ -47,6 +47,11 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
             }
             else
             {
+                // STOPPED HERE: We just need to switch to using the gamestateTasksQueuedEvent
+                // rather than the gamestateTasksCompleteEvent to signal that everything is complete
+                // since this is some bullshit that we consistently seem to set the complete event
+                // while tasks are blatantly still queued. This may be a side affect of the new
+                // memory management system giving out bad data to array of events but I doubt it.
                 ResetEvent(gamestateTasksQueuedEvent);
                 SetEvent(gamestateTasksCompleteEvent);
             }

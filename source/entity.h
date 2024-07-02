@@ -4,6 +4,7 @@
 
 #include "globals.h"
 #include "tasks.h"
+#include "memory_manager.h"
 
 struct EntityInternal;
 
