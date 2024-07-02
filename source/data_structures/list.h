@@ -4,6 +4,9 @@
 
 #include <windows.h>
 
+void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size);
+void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size);
+
 typedef struct ListElmt_
 {
     // Using void* to hold function pointers is apparently undefined behavior
@@ -27,10 +30,12 @@ void List_Clear(List *list);
 int List_Insert(List *list, const void *data);
 int List_InsertAt(List *list, const void *data, int position);
 int List_InsertNext(List *list, ListElmt *element, const void *data);
+int List_InsertElementNext(List *list, ListElmt *element, ListElmt *newElement);
 int List_InsertPrevious(List *list, ListElmt *element, const void *data);
 
 int List_RemovePosition(List *list, int position);
 int List_RemoveElement(List *list, ListElmt *element);
+int List_RemoveElementHardFree(List *list, ListElmt *element);
 int List_RemoveElementWithMatchingData(List *list, void *data);
 
 int List_GetDataPosition(List *list, void *data);

@@ -7,6 +7,7 @@
 #include "entity/asteroid.h"
 #include "entity/fighter.h"
 #include "tasks.h"
+#include "memory_manager.h"
 
 DWORD WINAPI GamestateHandler(LPVOID);
 

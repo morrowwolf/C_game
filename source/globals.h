@@ -19,13 +19,13 @@
 #include <math.h>
 #include <tchar.h>
 #include <stdio.h>
+#include "assets/resources.h"
 #include "graphics/D3DX12_globals.h"
 #include "data_structures/list.h"
 #include "data_structures/list_iterator.h"
 #include "data_structures/list_iterator_thread.h"
 #include "data_structures/read_write_lock.h"
 #include "data_structures/read_write_lock_priority.h"
-#include "assets/resources.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -98,6 +98,7 @@ typedef struct Gamestate
 {
     __int8 debugMode;
 
+#define SECOND_IN_HUNDREDNANOSECONDS 10000000ULL
 // 10000000ULL is 1 second in 100ns intervals
 // 10000ULL is 1 ms in 100ns intervals
 // 156250ULL is 64 ticks per second
@@ -105,13 +106,13 @@ typedef struct Gamestate
 #define SECONDS_TO_TICKS(seconds) (seconds * (10000000ULL / DEFAULT_TICK_RATE))
 #define MILLISECONDS_TO_HUNDREDNANOSECONDS(milliseconds) (milliseconds * 10000LL)
 #define HUNDREDNANOSECONDS_TO_MILLISECONDS(nanoseconds) (nanoseconds / 10000LL)
-    unsigned __int64 tickCount;
+    volatile unsigned long long currentTick;
     ULARGE_INTEGER nextTickTime;
     double lastTickTimeDifference;
 
-    volatile unsigned __int32 tickProcessing;
+    volatile unsigned long tickProcessing;
 
-    volatile unsigned __int64 runningEntityID;
+    volatile unsigned long long runningEntityID;
 #define GAME_PAUSED 0
 #define GAME_RUNNING 1
     unsigned short running; // If the gamestate should be processing
@@ -192,7 +193,7 @@ typedef struct Screen
 
     // About 256 frames per second, exact 256 frames would be 390625ULL
 #define DEFAULT_FRAME_REFRESH_RATE 39063ULL
-    ULARGE_INTEGER nextFrameRefreshTime;
+    LARGE_INTEGER nextFrameRefreshTime;
 
 } Screen;
 

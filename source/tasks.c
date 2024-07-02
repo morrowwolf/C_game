@@ -6,7 +6,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
     TaskHandlerArgs *taskHandlerArgs = (TaskHandlerArgs *)lpParam;
     unsigned int taskHandlerID = taskHandlerArgs->taskHandlerID;
 
-    free(taskHandlerArgs);
+    MemoryManager_DeallocateMemory((void **)&taskHandlerArgs, sizeof(TaskHandlerArgs));
 
     HANDLE tasksQueuedEvent;
     List_GetDataAtPosition(&TASKSTATE->tasksQueuedSyncEvents, &tasksQueuedEvent, taskHandlerID);
@@ -102,7 +102,8 @@ __int8 Task_HandleTaskQueue(RWL_List *checkedTaskQueue)
         void (*castedTask)() = (void (*)())task->task;
         castedTask();
     }
-    free(task);
+
+    MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
     return TRUE;
 }
 

@@ -60,7 +60,8 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                Task *renderTask = malloc(sizeof(Task));
+                Task *renderTask;
+                MemoryManager_AllocateMemory((void **)&renderTask, sizeof(Task));
                 renderTask->task = (void (*)(void *))Directx_SetupRender;
                 renderTask->taskArgument = NULL;
 
@@ -75,9 +76,30 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
                 }
 
                 SCREEN->nextFrameRefreshTime.QuadPart += DEFAULT_FRAME_REFRESH_RATE;
-                updateWindowTimerTime.QuadPart = (__int64)SCREEN->nextFrameRefreshTime.QuadPart;
 
-                SetWaitableTimer(hUpdateWindowTimer, &updateWindowTimerTime, 0, NULL, NULL, 0);
+                SetWaitableTimer(hUpdateWindowTimer, &SCREEN->nextFrameRefreshTime, 0, NULL, NULL, 0);
+            }
+
+            if (WaitForSingleObject(MEMORY_MANAGER->memoryCleanupTimer, 0) == WAIT_OBJECT_0)
+            {
+                Task *task;
+                MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+                task->task = (void (*)(void *))MemoryManager_Cleanup;
+                task->taskArgument = NULL;
+
+                Task_QueueTask(&TASKSTATE->systemTaskQueue, &TASKSTATE->systemTasksQueuedSyncEvents, task);
+
+                if (MEMORY_MANAGER->nextMemoryCleanupTime.QuadPart == 0)
+                {
+                    FILETIME currentTime;
+                    GetSystemTimeAsFileTime(&currentTime);
+                    MEMORY_MANAGER->nextMemoryCleanupTime.LowPart = currentTime.dwLowDateTime;
+                    MEMORY_MANAGER->nextMemoryCleanupTime.HighPart = currentTime.dwHighDateTime;
+                }
+
+                MEMORY_MANAGER->nextMemoryCleanupTime.QuadPart += SECOND_IN_HUNDREDNANOSECONDS;
+
+                SetWaitableTimer(MEMORY_MANAGER->memoryCleanupTimer, &MEMORY_MANAGER->nextMemoryCleanupTime, 0, NULL, NULL, 0);
             }
 
             if ((lastMessage = PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)))

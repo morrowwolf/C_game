@@ -6,7 +6,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(szCmdLine);
 
-	SCREEN = calloc(1, sizeof(Screen));
+	// Memory manager init
+	MemoryManager_Initialize();
+
+	// Screen init
+	MemoryManager_AllocateMemory((void **)&SCREEN, sizeof(Screen));
 	SCREEN->screenWidth = DEFAULT_SCREEN_SIZE_X;
 	SCREEN->screenHeight = DEFAULT_SCREEN_SIZE_Y;
 	SCREEN->screenRadius = sqrt(pow(SCREEN->screenWidth, 2) + pow(SCREEN->screenHeight, 2));
@@ -14,17 +18,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SCREEN->screenLocation.y = abs(MAX_GAME_SPACE_TOP) - abs(MAX_GAME_SPACE_BOTTOM);
 	SCREEN->preRenderSetupMutex = CreateMutex(NULL, FALSE, NULL);
 
-	TASKSTATE = calloc(1, sizeof(TaskState));
+	// Taskstate init
+	MemoryManager_AllocateMemory((void **)&TASKSTATE, sizeof(TaskState));
 
-	List *systemTaskQueue = malloc(sizeof(List));
+	List *systemTaskQueue;
+	MemoryManager_AllocateMemory((void **)&systemTaskQueue, sizeof(List));
 	List_Init(systemTaskQueue, NULL);
 	ReadWriteLock_Init(&TASKSTATE->systemTaskQueue, systemTaskQueue);
 
-	List *gamestateTaskQueue = malloc(sizeof(List));
+	List *gamestateTaskQueue;
+	MemoryManager_AllocateMemory((void **)&gamestateTaskQueue, sizeof(List));
 	List_Init(gamestateTaskQueue, NULL);
 	ReadWriteLock_Init(&TASKSTATE->gamestateTaskQueue, gamestateTaskQueue);
 
-	List *garbageTaskQueue = malloc(sizeof(List));
+	List *garbageTaskQueue;
+	MemoryManager_AllocateMemory((void **)&garbageTaskQueue, sizeof(List));
 	List_Init(garbageTaskQueue, NULL);
 	ReadWriteLock_Init(&TASKSTATE->garbageTaskQueue, garbageTaskQueue);
 
@@ -50,7 +58,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		List_Insert(&TASKSTATE->gamestateTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 		List_Insert(&TASKSTATE->garbageTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
-		TaskHandlerArgs *taskHandlerArgs = calloc(1, sizeof(TaskHandlerArgs));
+		TaskHandlerArgs *taskHandlerArgs;
+		MemoryManager_AllocateMemory((void **)&taskHandlerArgs, sizeof(TaskHandlerArgs));
 		taskHandlerArgs->taskHandlerID = i;
 
 		threadHandle = CreateThread(NULL, 0, TaskHandler, taskHandlerArgs, 0, NULL);
@@ -59,11 +68,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		TASKSTATE->totalTaskThreads++;
 	}
 
-	GAMESTATE = calloc(1, sizeof(Gamestate));
-	List *entities = malloc(sizeof(List));
-	List *deadEntities = malloc(sizeof(List));
-	List *asteroids = malloc(sizeof(List));
-	List *fighters = malloc(sizeof(List));
+	// Gamestate init
+	MemoryManager_AllocateMemory((void **)&GAMESTATE, sizeof(Gamestate));
+
+	List *entities;
+	MemoryManager_AllocateMemory((void **)&entities, sizeof(List));
+	List *deadEntities;
+	MemoryManager_AllocateMemory((void **)&deadEntities, sizeof(List));
+	List *asteroids;
+	MemoryManager_AllocateMemory((void **)&asteroids, sizeof(List));
+	List *fighters;
+	MemoryManager_AllocateMemory((void **)&fighters, sizeof(List));
 	List_Init(entities, NULL);
 	List_Init(deadEntities, NULL);
 	List_Init(asteroids, NULL);
@@ -110,7 +125,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		}
 	}
 
-	free(arrayOfThreadHandles);
+	MemoryManager_DeallocateMemory(&arrayOfThreadHandles, threadHandles.length * sizeof(HANDLE));
 	List_Clear(&threadHandles);
 
 	// All threads should be done at this point so we're just cleaning up.
@@ -132,7 +147,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 			if (task->taskArgument == entity)
 			{
 				List_RemoveElementWithMatchingData(garbageTaskQueue, task);
-				free(task);
+				MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 
 				// Reset the iterator since we modified the list.
 				ListIterator_Init(&garbageTaskQueueIterator, garbageTaskQueue);
@@ -151,10 +166,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Clear(asteroids);
 	List_Clear(fighters);
 
-	free(deadEntities);
-	free(entities);
-	free(asteroids);
-	free(fighters);
+	MemoryManager_DeallocateMemory((void **)&deadEntities, sizeof(List));
+	MemoryManager_DeallocateMemory((void **)&entities, sizeof(List));
+	MemoryManager_DeallocateMemory((void **)&asteroids, sizeof(List));
+	MemoryManager_DeallocateMemory((void **)&fighters, sizeof(List));
 
 	ReadWriteLockPriority_Destroy(&GAMESTATE->entities);
 	ReadWriteLock_Destroy(&GAMESTATE->deadEntities);
@@ -163,7 +178,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	CloseHandle(GAMESTATE->keyEvent);
 
-	free(GAMESTATE);
+	MemoryManager_DeallocateMemory((void **)&GAMESTATE, sizeof(Gamestate));
 
 	ReadWriteLock_GetWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
 
@@ -180,11 +195,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 			void (*castedTask)() = (void (*)())task->task;
 			castedTask();
 		}
-		free(task);
+		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 	}
 
 	List_Clear(garbageTaskQueue);
-	free(garbageTaskQueue);
+	MemoryManager_DeallocateMemory((void **)&garbageTaskQueue, sizeof(List));
 	ReadWriteLock_Destroy(&TASKSTATE->garbageTaskQueue);
 
 	ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
@@ -194,11 +209,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	while (ListIterator_Next(&gamestateTaskQueueIterator, (void **)&task))
 	{
-		free(task);
+		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 	}
 
 	List_Clear(gamestateTaskQueue);
-	free(gamestateTaskQueue);
+	MemoryManager_DeallocateMemory((void **)&gamestateTaskQueue, sizeof(List));
 	ReadWriteLock_Destroy(&TASKSTATE->gamestateTaskQueue);
 
 	ReadWriteLock_GetWritePermission(&TASKSTATE->systemTaskQueue, (void **)&systemTaskQueue);
@@ -208,11 +223,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	while (ListIterator_Next(&systemTaskQueueIterator, (void **)&task))
 	{
-		free(task);
+		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 	}
 
 	List_Clear(systemTaskQueue);
-	free(systemTaskQueue);
+	MemoryManager_DeallocateMemory((void **)&systemTaskQueue, sizeof(List));
 	ReadWriteLock_Destroy(&TASKSTATE->systemTaskQueue);
 
 	List_Clear(&TASKSTATE->garbageTasksQueuedSyncEvents);
@@ -221,12 +236,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	List_Clear(&TASKSTATE->tasksQueuedSyncEvents);
 	List_Clear(&TASKSTATE->gamestateTasksCompleteSyncEvents);
 
-	free(TASKSTATE);
+	MemoryManager_DeallocateMemory((void **)&TASKSTATE, sizeof(TaskState));
 
 	CloseHandle(SCREEN->preRenderSetupMutex);
 	CloseHandle(SCREEN->fenceEvent);
 	ReleaseDirectxObjects();
-	free(SCREEN);
+	MemoryManager_DeallocateMemory((void **)&SCREEN, sizeof(Screen));
+
+	MemoryManager_Destroy();
 
 #ifdef DEBUG
 	TCHAR buffer[64];

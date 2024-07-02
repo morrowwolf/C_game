@@ -51,12 +51,44 @@ int List_InsertNext(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    if ((newElement = malloc(sizeof(ListElmt))) == NULL)
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
+
+    newElement->data = (void *)data;
+
+    if (list->length == 0)
+    {
+        list->head = newElement;
+        list->head->prev = NULL;
+        list->head->next = NULL;
+        list->tail = newElement;
+    }
+    else
+    {
+        newElement->next = element->next;
+        newElement->prev = element;
+
+        if (element->next == NULL)
+        {
+            list->tail = newElement;
+        }
+        else
+        {
+            element->next->prev = newElement;
+        }
+
+        element->next = newElement;
+    }
+
+    list->length++;
+    return TRUE;
+}
+
+int List_InsertElementNext(List *list, ListElmt *element, ListElmt *newElement)
+{
+    if (element == NULL && list->length != 0)
     {
         return FALSE;
     }
-
-    newElement->data = (void *)data;
 
     if (list->length == 0)
     {
@@ -95,10 +127,7 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    if ((newElement = malloc(sizeof(ListElmt))) == NULL)
-    {
-        return FALSE;
-    }
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
 
     newElement->data = (void *)data;
 
@@ -192,8 +221,53 @@ int List_RemoveElement(List *list, ListElmt *element)
         list->destroy(element->data);
     }
 
-    free(element);
     list->length--;
+    MemoryManager_DeallocateMemory((void **)&element, sizeof(ListElmt));
+
+    return TRUE;
+}
+
+int List_RemoveElementHardFree(List *list, ListElmt *element)
+{
+    if (element == NULL || list->length == 0)
+    {
+        return FALSE;
+    }
+
+    if (element == list->head)
+    {
+        list->head = element->next;
+
+        if (list->head == NULL)
+        {
+            list->tail = NULL;
+        }
+        else
+        {
+            element->next->prev = NULL;
+        }
+    }
+    else
+    {
+        element->prev->next = element->next;
+
+        if (element->next == NULL)
+        {
+            list->tail = element->prev;
+        }
+        else
+        {
+            element->next->prev = element->prev;
+        }
+    }
+
+    if (list->destroy != NULL)
+    {
+        list->destroy(element->data);
+    }
+
+    list->length--;
+    free(element);
 
     return TRUE;
 }
@@ -327,7 +401,8 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
 
 void List_GetAsArray(List *list, void **returnedArray)
 {
-    void **array = malloc(list->length * sizeof(void *));
+    void **array;
+    MemoryManager_AllocateMemory((void **)&array, list->length * sizeof(void *));
     unsigned int counter = 0;
     ListElmt *referenceElement = list->head;
     while (referenceElement != NULL)

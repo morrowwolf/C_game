@@ -33,7 +33,8 @@ void AsteroidDestroy(Entity *entity)
     List *asteroids;
     if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids))
     {
-        Task *task = calloc(1, sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))AsteroidDestroy;
         task->taskArgument = entity;
 
@@ -119,7 +120,8 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    Point *baseVertex = malloc(sizeof(Point));
+    Point *baseVertex;
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
@@ -129,7 +131,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
@@ -139,7 +141,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
@@ -149,7 +151,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    baseVertex = malloc(sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
 
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);

@@ -1,17 +1,20 @@
+
 #include "entity.h"
 
 void ZeroAndInitEntity(Entity **entity)
 {
-    *entity = malloc(sizeof(Entity));
+    MemoryManager_AllocateMemory((void **)entity, sizeof(Entity));
     ZeroMemory(*entity, sizeof(Entity));
 
-    Point *location = calloc(1, sizeof(Point));
+    Point *location;
+    MemoryManager_AllocateMemory((void **)&location, sizeof(Point));
     ReadWriteLock_Init(&(*entity)->location, location);
 
-    List_Init(&(*entity)->baseVertices, List_FreeOnRemove);
+    List_Init(&(*entity)->baseVertices, (void (*)(void *))List_DeallocatePointOnRemove);
 
-    List *rotationOffsetVertices = calloc(1, sizeof(List));
-    List_Init(rotationOffsetVertices, List_FreeOnRemove);
+    List *rotationOffsetVertices;
+    MemoryManager_AllocateMemory((void **)&rotationOffsetVertices, sizeof(List));
+    List_Init(rotationOffsetVertices, (void (*)(void *))List_DeallocatePointOnRemove);
     ReadWriteLock_Init(&(*entity)->rotationOffsetVertices, rotationOffsetVertices);
 
     List_Init(&(*entity)->onCollision, NULL);
@@ -34,7 +37,8 @@ void EntityDeath(Entity *entity)
         return;
     }
 
-    Task *task = calloc(1, sizeof(Task));
+    Task *task;
+    MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
     task->task = (void (*)(void *))(entity->onDestroy);
     task->taskArgument = entity;
 
@@ -46,7 +50,8 @@ void EntityDestroy(Entity *entity)
     List *entities;
     if (!ReadWriteLockPriority_TryGetWritePermission(&GAMESTATE->entities, (void **)&entities))
     {
-        Task *task = malloc(sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroy;
         task->taskArgument = entity;
 
@@ -59,7 +64,8 @@ void EntityDestroy(Entity *entity)
     {
         ReadWriteLockPriority_ReleaseWritePermission(&GAMESTATE->entities, (void **)&entities);
 
-        Task *task = malloc(sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroy;
         task->taskArgument = entity;
 
@@ -74,7 +80,7 @@ void EntityDestroy(Entity *entity)
 
     Point *location;
     ReadWriteLock_GetWritePermission(&entity->location, (void **)&location);
-    free(location);
+    MemoryManager_DeallocateMemory((void **)&location, sizeof(Point));
     ReadWriteLock_ReleaseWritePermission(&entity->location, (void **)&location);
     ReadWriteLock_Destroy(&entity->location);
 
@@ -83,7 +89,7 @@ void EntityDestroy(Entity *entity)
     List *rotationOffsetVertices;
     ReadWriteLock_GetWritePermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
     List_Clear(rotationOffsetVertices);
-    free(rotationOffsetVertices);
+    MemoryManager_DeallocateMemory((void **)&rotationOffsetVertices, sizeof(List));
     ReadWriteLock_ReleaseWritePermission(&entity->rotationOffsetVertices, (void **)&rotationOffsetVertices);
     ReadWriteLock_Destroy(&entity->rotationOffsetVertices);
 
@@ -100,7 +106,8 @@ void EntityDestroyPartTwo(Entity *entity)
 {
     if (WaitForSingleObject(SCREEN->preRenderSetupMutex, 0) != WAIT_OBJECT_0)
     {
-        Task *task = calloc(1, sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroyPartTwo;
         task->taskArgument = entity;
 
@@ -113,7 +120,8 @@ void EntityDestroyPartTwo(Entity *entity)
     {
         ReleaseMutex(SCREEN->preRenderSetupMutex);
 
-        Task *task = calloc(1, sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))EntityDestroyPartTwo;
         task->taskArgument = entity;
 
@@ -127,7 +135,7 @@ void EntityDestroyPartTwo(Entity *entity)
 
     ReleaseMutex(SCREEN->preRenderSetupMutex);
 
-    free(entity);
+    MemoryManager_DeallocateMemory((void **)&entity, sizeof(Entity));
 }
 
 void EntitySpawn(Entity *settingUpEntity)
@@ -169,7 +177,8 @@ void CalculateAndSetRotationOffsetVertices(Entity *entity)
         while (referenceElementBaseVertices != NULL)
         {
             Point *referencePointVertices = referenceElementBaseVertices->data;
-            Point *newRotationOffsetPoint = malloc(sizeof(Point));
+            Point *newRotationOffsetPoint;
+            MemoryManager_AllocateMemory((void **)&newRotationOffsetPoint, sizeof(Point));
 
             newRotationOffsetPoint->x = CalculateXPointRotation(referencePointVertices, entity->rotation);
             newRotationOffsetPoint->y = CalculateYPointRotation(referencePointVertices, entity->rotation);
@@ -517,7 +526,8 @@ void OnTickHandleMovement(Entity *entity)
 
     if (fabs(entity->velocityThisTick.x) > MINIMUM_FLOAT_DIFFERENCE || fabs(entity->velocityThisTick.y) > MINIMUM_FLOAT_DIFFERENCE || fabs(entity->rotationVelocityThisTick) > MINIMUM_FLOAT_DIFFERENCE)
     {
-        Task *task = calloc(1, sizeof(Task));
+        Task *task;
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))OnTickHandleMovement;
         task->taskArgument = entity;
 
@@ -545,14 +555,15 @@ void HandleMovementCollisionCheck(Entity *entity)
     ReadWriteLock_GetReadPermission(&entity->rotationOffsetVertices, (void **)&referenceEntityRotationOffsetVertices);
 
     List entityRotationOffsetVertices;
-    List_Init(&entityRotationOffsetVertices, List_FreeOnRemove);
+    List_Init(&entityRotationOffsetVertices, (void (*)(void *))List_DeallocatePointOnRemove);
 
     ListIterator referenceEntityRotationOffsetVerticesIterator;
     ListIterator_Init(&referenceEntityRotationOffsetVerticesIterator, referenceEntityRotationOffsetVertices);
     Point *referenceEntityRotationOffsetVertex;
     while (ListIterator_Next(&referenceEntityRotationOffsetVerticesIterator, (void **)&referenceEntityRotationOffsetVertex))
     {
-        Point *entityRotationOffsetVertex = malloc(sizeof(Point));
+        Point *entityRotationOffsetVertex;
+        MemoryManager_AllocateMemory((void **)&entityRotationOffsetVertex, sizeof(Point));
         entityRotationOffsetVertex->x = referenceEntityRotationOffsetVertex->x;
         entityRotationOffsetVertex->y = referenceEntityRotationOffsetVertex->y;
 
@@ -589,6 +600,7 @@ void HandleMovementCollisionCheck(Entity *entity)
             {
                 List_Clear(&entityRotationOffsetVertices);
                 List_Clear(&otherEntitiesPotentialCollision);
+                ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
                 return;
             }
         }
@@ -603,7 +615,8 @@ void HandleMovementCollisionCheck(Entity *entity)
             continue;
         }
 
-        CollisionDataHolder *collisionDataHolder = calloc(1, sizeof(CollisionDataHolder));
+        CollisionDataHolder *collisionDataHolder;
+        MemoryManager_AllocateMemory((void **)&collisionDataHolder, sizeof(CollisionDataHolder));
         CheckCollisionDataHolder_Init(collisionDataHolder, otherEntity, referenceOtherEntityLocation, permissionRequests[1].returnedData);
 
         List_Insert(&otherEntitiesPotentialCollision, collisionDataHolder);
@@ -783,14 +796,15 @@ void CheckCollisionDataHolder_Init(CollisionDataHolder *collisionDataHolder, Ent
     collisionDataHolder->location.x = location->x;
     collisionDataHolder->location.y = location->y;
 
-    List_Init(&collisionDataHolder->vertices, List_FreeOnRemove);
+    List_Init(&collisionDataHolder->vertices, (void (*)(void *))List_DeallocatePointOnRemove);
 
     ListIterator verticesListIterator;
     ListIterator_Init(&verticesListIterator, verticesList);
     Point *referenceVertex;
     while (ListIterator_Next(&verticesListIterator, (void **)&referenceVertex))
     {
-        Point *copiedVertex = malloc(sizeof(Point));
+        Point *copiedVertex;
+        MemoryManager_AllocateMemory((void **)&copiedVertex, sizeof(Point));
         copiedVertex->x = referenceVertex->x;
         copiedVertex->y = referenceVertex->y;
 
@@ -801,7 +815,7 @@ void CheckCollisionDataHolder_Init(CollisionDataHolder *collisionDataHolder, Ent
 void CheckCollisionDataHolder_Destroy(CollisionDataHolder *collisionDataHolder)
 {
     List_Clear(&collisionDataHolder->vertices);
-    free(collisionDataHolder);
+    MemoryManager_DeallocateMemory((void **)&collisionDataHolder, sizeof(CollisionDataHolder));
 }
 
 void List_DestroyCollisionDataHolderOnRemove(void *data)
