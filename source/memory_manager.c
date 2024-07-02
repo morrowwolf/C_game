@@ -183,30 +183,17 @@ void MemoryManager_Cleanup()
 
     while (ListIterator_Next(&memorySizeInfosIterator, (void **)&memorySizeInfo))
     {
-        unsigned int normalizedAllocatedCount = memorySizeInfo->allocatedCount / deltaTicks;
-        unsigned int normalizedDeallocatedCount = memorySizeInfo->deallocatedCount / deltaTicks;
+        // unsigned int normalizedAllocatedCount = memorySizeInfo->allocatedCount / deltaTicks;
+        // unsigned int normalizedDeallocatedCount = memorySizeInfo->deallocatedCount / deltaTicks;
         unsigned int normalizedFailedToStoreCount = memorySizeInfo->failedToStoreCount / deltaTicks;
 
         memorySizeInfo->allocatedCount = 0;
         memorySizeInfo->deallocatedCount = 0;
         memorySizeInfo->failedToStoreCount = 0;
 
-        if (normalizedAllocatedCount == 0 && normalizedDeallocatedCount == 0)
-        {
-            if (memorySizeInfo->memoryPool.maxAmountOfMemoryChunks > 1)
-            {
-                MemoryPool_ResizePool(&memorySizeInfo->memoryPool, 1);
-            }
-            continue;
-        }
-        else if (normalizedFailedToStoreCount > 0)
+        if (normalizedFailedToStoreCount > 0)
         {
             MemoryPool_ResizePool(&memorySizeInfo->memoryPool, memorySizeInfo->memoryPool.maxAmountOfMemoryChunks * 2);
-            continue;
-        }
-        else if (memorySizeInfo->memoryPool.maxAmountOfMemoryChunks > normalizedDeallocatedCount * 2)
-        {
-            MemoryPool_ResizePool(&memorySizeInfo->memoryPool, normalizedDeallocatedCount);
             continue;
         }
     }
