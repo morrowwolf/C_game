@@ -600,6 +600,7 @@ void HandleMovementCollisionCheck(Entity *entity)
             {
                 List_Clear(&entityRotationOffsetVertices);
                 List_Clear(&otherEntitiesPotentialCollision);
+                ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
                 return;
             }
         }

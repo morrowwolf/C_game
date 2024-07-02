@@ -2,8 +2,8 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-#define DEBUG
-#define DEBUG_TICKS
+// #define DEBUG
+// #define DEBUG_TICKS
 
 #define _USE_MATH_DEFINES
 
