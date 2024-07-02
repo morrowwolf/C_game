@@ -115,6 +115,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
     ListIteratorThread_Destroy(entitiesIteratorThread);
     MemoryManager_DeallocateMemory((void **)&entitiesIteratorThread, sizeof(ListIteratorThread));
+    MemoryManager_DeallocateMemory((void **)&arrayOfTasksCompleteSyncEvents, TASKSTATE->gamestateTasksCompleteSyncEvents.length * sizeof(void *));
 
     return 0;
 }

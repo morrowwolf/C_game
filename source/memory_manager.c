@@ -196,6 +196,9 @@ void MemoryManager_Cleanup()
             MemoryPool_ResizePool(&memorySizeInfo->memoryPool, memorySizeInfo->memoryPool.maxAmountOfMemoryChunks * 2);
             continue;
         }
+
+        // TODO: Maybe fill the pool if the allocated count is greater than deallocated and the memory pool is empty?
+        // We want to avoid the pool being empty and having to allocate memory during a tick
     }
 
     LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
