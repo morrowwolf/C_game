@@ -2,9 +2,6 @@
 #ifndef MEMORY_MANAGER_H
 #define MEMORY_MANAGER_H
 
-#define UNICODE
-#define _UNICODE
-
 #include "globals.h"
 #include "data_structures/memory_pool.h"
 #include "tasks.h"
@@ -16,7 +13,7 @@ typedef struct MemoryManager
 
     unsigned long long lastCleanupTick;
 
-#define MEMORY_MANAGER_CLEANUP_INTERVAL 1000
+#define MEMORY_MANAGER_CLEANUP_INTERVAL SECOND_IN_HUNDREDNANOSECONDS
     HANDLE memoryCleanupTimer;
     LARGE_INTEGER nextMemoryCleanupTime;
 } MemoryManager;

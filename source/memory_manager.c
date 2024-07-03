@@ -11,7 +11,7 @@ void MemoryManager_Initialize()
 
     MEMORY_MANAGER->memoryCleanupTimer = CreateWaitableTimer(NULL, FALSE, NULL);
     LARGE_INTEGER initialTime;
-    initialTime.QuadPart = -SECOND_IN_HUNDREDNANOSECONDS;
+    initialTime.QuadPart = -MEMORY_MANAGER_CLEANUP_INTERVAL;
 
     SetWaitableTimer(MEMORY_MANAGER->memoryCleanupTimer, &initialTime, 0, NULL, NULL, 0);
 

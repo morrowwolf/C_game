@@ -97,7 +97,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
                     MEMORY_MANAGER->nextMemoryCleanupTime.HighPart = currentTime.dwHighDateTime;
                 }
 
-                MEMORY_MANAGER->nextMemoryCleanupTime.QuadPart += SECOND_IN_HUNDREDNANOSECONDS;
+                MEMORY_MANAGER->nextMemoryCleanupTime.QuadPart += MEMORY_MANAGER_CLEANUP_INTERVAL;
 
                 SetWaitableTimer(MEMORY_MANAGER->memoryCleanupTimer, &MEMORY_MANAGER->nextMemoryCleanupTime, 0, NULL, NULL, 0);
             }
