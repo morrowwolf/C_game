@@ -45,6 +45,8 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         List tasksToQueue;
         List_Init(&tasksToQueue, NULL);
 
+        // TODO: Any spawn tasks should eventually be put in a post-update
+        //  task queue so that they don't interfere with the current tick
         Task *task;
         MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
         task->task = (void (*)(void *))Gamestate_FighterSpawn;
