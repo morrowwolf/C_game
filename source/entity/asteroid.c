@@ -38,7 +38,7 @@ void AsteroidDestroy(Entity *entity)
         task->task = (void (*)(void *))AsteroidDestroy;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }

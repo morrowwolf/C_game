@@ -42,7 +42,7 @@ void EntityDeath(Entity *entity)
     task->task = (void (*)(void *))(entity->onDestroy);
     task->taskArgument = entity;
 
-    Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+    Task_PushGarbageTask(task);
 }
 
 void EntityDestroy(Entity *entity)
@@ -55,7 +55,7 @@ void EntityDestroy(Entity *entity)
         task->task = (void (*)(void *))EntityDestroy;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }
@@ -69,7 +69,7 @@ void EntityDestroy(Entity *entity)
         task->task = (void (*)(void *))EntityDestroy;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }
@@ -111,7 +111,7 @@ void EntityDestroyPartTwo(Entity *entity)
         task->task = (void (*)(void *))EntityDestroyPartTwo;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }
@@ -125,7 +125,7 @@ void EntityDestroyPartTwo(Entity *entity)
         task->task = (void (*)(void *))EntityDestroyPartTwo;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }
@@ -531,7 +531,7 @@ void OnTickHandleMovement(Entity *entity)
         task->task = (void (*)(void *))OnTickHandleMovement;
         task->taskArgument = entity;
 
-        Task_QueueGamestateTask(task);
+        Task_PushGamestateTask(task);
     }
 }
 

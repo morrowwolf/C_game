@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DLIST_H
-#define DLIST_H
+#ifndef LIST_H
+#define LIST_H
 
 #include <windows.h>
 
@@ -18,7 +18,7 @@ typedef struct ListElmt_
 
 typedef struct List_
 {
-    unsigned int length;
+    unsigned long length;
     void (*destroy)(void *data);
     ListElmt *head;
     ListElmt *tail;

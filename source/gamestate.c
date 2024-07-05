@@ -76,7 +76,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         ReadWriteLockPriority_ReleaseReadPermission(&GAMESTATE->entities, (void **)&entities);
 
-        Task_QueueGamestateTasks(&tasksToQueue);
+        Task_PushGamestateTasks(&tasksToQueue);
         List_Clear(&tasksToQueue);
 
         WaitForMultipleObjects(syncEventCount, arrayOfTasksCompleteSyncEvents, TRUE, INFINITE);
@@ -146,7 +146,7 @@ void Gamestate_EntitiesOnTick(ListIteratorThread *entitiesListIteratorThread)
     task->task = (void (*)(void *))Gamestate_EntitiesOnTick;
     task->taskArgument = entitiesListIteratorThread;
 
-    Task_QueueGamestateTask(task);
+    Task_PushGamestateTask(task);
 }
 
 #define ASTEROID_SPAWN_DELAY 60

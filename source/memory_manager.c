@@ -158,7 +158,7 @@ void MemoryManager_Cleanup()
         task->task = (void (*)(void *))MemoryManager_Cleanup;
         task->taskArgument = NULL;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }

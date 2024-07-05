@@ -21,26 +21,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	// Taskstate init
 	MemoryManager_AllocateMemory((void **)&TASKSTATE, sizeof(TaskState));
 
-	List *systemTaskQueue;
-	MemoryManager_AllocateMemory((void **)&systemTaskQueue, sizeof(List));
-	List_Init(systemTaskQueue, NULL);
-	ReadWriteLock_Init(&TASKSTATE->systemTaskQueue, systemTaskQueue);
-
-	List *gamestateTaskQueue;
-	MemoryManager_AllocateMemory((void **)&gamestateTaskQueue, sizeof(List));
-	List_Init(gamestateTaskQueue, NULL);
-	ReadWriteLock_Init(&TASKSTATE->gamestateTaskQueue, gamestateTaskQueue);
-
-	List *garbageTaskQueue;
-	MemoryManager_AllocateMemory((void **)&garbageTaskQueue, sizeof(List));
-	List_Init(garbageTaskQueue, NULL);
-	ReadWriteLock_Init(&TASKSTATE->garbageTaskQueue, garbageTaskQueue);
+	Stack_Init(&TASKSTATE->systemTaskStack, NULL);
+	Stack_Init(&TASKSTATE->gamestateTaskStack, NULL);
+	Stack_Init(&TASKSTATE->garbageTaskStack, NULL);
 
 	List_Init(&TASKSTATE->gamestateTasksCompleteSyncEvents, List_CloseHandleOnRemove);
 	List_Init(&TASKSTATE->tasksQueuedSyncEvents, List_CloseHandleOnRemove);
-	List_Init(&TASKSTATE->systemTasksQueuedSyncEvents, List_CloseHandleOnRemove);
-	List_Init(&TASKSTATE->gamestateTasksQueuedSyncEvents, List_CloseHandleOnRemove);
-	List_Init(&TASKSTATE->garbageTasksQueuedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->systemTasksPushedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->gamestateTasksPushedSyncEvents, List_CloseHandleOnRemove);
+	List_Init(&TASKSTATE->garbageTasksPushedSyncEvents, List_CloseHandleOnRemove);
 
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
@@ -54,9 +43,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		List_Insert(&TASKSTATE->gamestateTasksCompleteSyncEvents, CreateEvent(NULL, TRUE, TRUE, NULL));
 		List_Insert(&TASKSTATE->tasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
-		List_Insert(&TASKSTATE->systemTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
-		List_Insert(&TASKSTATE->gamestateTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
-		List_Insert(&TASKSTATE->garbageTasksQueuedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->systemTasksPushedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->gamestateTasksPushedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
+		List_Insert(&TASKSTATE->garbageTasksPushedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
 		TaskHandlerArgs *taskHandlerArgs;
 		MemoryManager_AllocateMemory((void **)&taskHandlerArgs, sizeof(TaskHandlerArgs));
@@ -134,32 +123,37 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	ListIterator_Init(&entitiesIterator, entities);
 	Entity *entity;
 
-	ReadWriteLock_GetWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
-
-	ListIterator garbageTaskQueueIterator;
-	ListIterator_Init(&garbageTaskQueueIterator, garbageTaskQueue);
+	Stack tempStack;
+	Stack_Init(&tempStack, NULL);
 	Task *task;
 
 	while (ListIterator_Next(&entitiesIterator, (void **)&entity))
 	{
-		while (ListIterator_Next(&garbageTaskQueueIterator, (void **)&task))
+		while (TASKSTATE->garbageTaskStack.length >= 1)
 		{
+			Stack_Pop(&TASKSTATE->garbageTaskStack, (void **)&task);
+
 			if (task->taskArgument == entity)
 			{
-				List_RemoveElementWithMatchingData(garbageTaskQueue, task);
 				MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
-
-				// Reset the iterator since we modified the list.
-				ListIterator_Init(&garbageTaskQueueIterator, garbageTaskQueue);
+			}
+			else
+			{
+				Stack_Push(&tempStack, task);
 			}
 		}
+
+		while (tempStack.length >= 1)
+		{
+			Stack_Pop(&tempStack, (void **)&task);
+			Stack_Push(&TASKSTATE->garbageTaskStack, task);
+		}
+
 		entity->onDestroy(entity);
 
 		// Reset the iterator since we have likely modified the list.
 		ListIterator_Init(&entitiesIterator, entities);
 	}
-
-	ReadWriteLock_ReleaseWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
 
 	List_Clear(deadEntities);
 	List_Clear(entities);
@@ -180,12 +174,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 	MemoryManager_DeallocateMemory((void **)&GAMESTATE, sizeof(Gamestate));
 
-	ReadWriteLock_GetWritePermission(&TASKSTATE->garbageTaskQueue, (void **)&garbageTaskQueue);
-
-	ListIterator_Init(&garbageTaskQueueIterator, garbageTaskQueue);
-
-	while (ListIterator_Next(&garbageTaskQueueIterator, (void **)&task))
+	while (TASKSTATE->garbageTaskStack.length >= 1)
 	{
+		Stack_Pop(&TASKSTATE->garbageTaskStack, (void **)&task);
+
 		if (task->taskArgument != NULL)
 		{
 			task->task(task->taskArgument);
@@ -198,41 +190,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 	}
 
-	List_Clear(garbageTaskQueue);
-	MemoryManager_DeallocateMemory((void **)&garbageTaskQueue, sizeof(List));
-	ReadWriteLock_Destroy(&TASKSTATE->garbageTaskQueue);
+	TASKSTATE->garbageTaskStack.destroy = Stack_DeallocateTaskOnPop;
+	Stack_Clear(&TASKSTATE->garbageTaskStack);
 
-	ReadWriteLock_GetWritePermission(&TASKSTATE->gamestateTaskQueue, (void **)&gamestateTaskQueue);
+	TASKSTATE->gamestateTaskStack.destroy = Stack_DeallocateTaskOnPop;
+	Stack_Clear(&TASKSTATE->gamestateTaskStack);
 
-	ListIterator gamestateTaskQueueIterator;
-	ListIterator_Init(&gamestateTaskQueueIterator, gamestateTaskQueue);
+	TASKSTATE->systemTaskStack.destroy = Stack_DeallocateTaskOnPop;
+	Stack_Clear(&TASKSTATE->systemTaskStack);
 
-	while (ListIterator_Next(&gamestateTaskQueueIterator, (void **)&task))
-	{
-		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
-	}
-
-	List_Clear(gamestateTaskQueue);
-	MemoryManager_DeallocateMemory((void **)&gamestateTaskQueue, sizeof(List));
-	ReadWriteLock_Destroy(&TASKSTATE->gamestateTaskQueue);
-
-	ReadWriteLock_GetWritePermission(&TASKSTATE->systemTaskQueue, (void **)&systemTaskQueue);
-
-	ListIterator systemTaskQueueIterator;
-	ListIterator_Init(&systemTaskQueueIterator, systemTaskQueue);
-
-	while (ListIterator_Next(&systemTaskQueueIterator, (void **)&task))
-	{
-		MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
-	}
-
-	List_Clear(systemTaskQueue);
-	MemoryManager_DeallocateMemory((void **)&systemTaskQueue, sizeof(List));
-	ReadWriteLock_Destroy(&TASKSTATE->systemTaskQueue);
-
-	List_Clear(&TASKSTATE->garbageTasksQueuedSyncEvents);
-	List_Clear(&TASKSTATE->gamestateTasksQueuedSyncEvents);
-	List_Clear(&TASKSTATE->systemTasksQueuedSyncEvents);
+	List_Clear(&TASKSTATE->garbageTasksPushedSyncEvents);
+	List_Clear(&TASKSTATE->gamestateTasksPushedSyncEvents);
+	List_Clear(&TASKSTATE->systemTasksPushedSyncEvents);
 	List_Clear(&TASKSTATE->tasksQueuedSyncEvents);
 	List_Clear(&TASKSTATE->gamestateTasksCompleteSyncEvents);
 
@@ -253,4 +222,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 #endif
 
 	exit(0);
+}
+
+void Stack_DeallocateTaskOnPop(void *data)
+{
+	Task *task = (Task *)data;
+	MemoryManager_DeallocateMemory((void **)&task, sizeof(Task));
 }

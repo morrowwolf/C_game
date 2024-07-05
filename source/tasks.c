@@ -1,6 +1,9 @@
 
 #include "tasks.h"
 
+static void Task_PushTask(Stack *taskStack, List *syncEvents, Task *task);
+static void Task_PushTasks(Stack *taskStack, List *syncEvents, List *taskList);
+
 DWORD WINAPI TaskHandler(LPVOID lpParam)
 {
     TaskHandlerArgs *taskHandlerArgs = (TaskHandlerArgs *)lpParam;
@@ -12,13 +15,13 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
     List_GetDataAtPosition(&TASKSTATE->tasksQueuedSyncEvents, &tasksQueuedEvent, taskHandlerID);
 
     HANDLE systemTasksQueuedEvent;
-    List_GetDataAtPosition(&TASKSTATE->systemTasksQueuedSyncEvents, &systemTasksQueuedEvent, taskHandlerID);
+    List_GetDataAtPosition(&TASKSTATE->systemTasksPushedSyncEvents, &systemTasksQueuedEvent, taskHandlerID);
 
     HANDLE gamestateTasksQueuedEvent;
-    List_GetDataAtPosition(&TASKSTATE->gamestateTasksQueuedSyncEvents, &gamestateTasksQueuedEvent, taskHandlerID);
+    List_GetDataAtPosition(&TASKSTATE->gamestateTasksPushedSyncEvents, &gamestateTasksQueuedEvent, taskHandlerID);
 
     HANDLE garbageTasksQueuedEvent;
-    List_GetDataAtPosition(&TASKSTATE->garbageTasksQueuedSyncEvents, &garbageTasksQueuedEvent, taskHandlerID);
+    List_GetDataAtPosition(&TASKSTATE->garbageTasksPushedSyncEvents, &garbageTasksQueuedEvent, taskHandlerID);
 
     HANDLE gamestateTasksCompleteEvent;
     List_GetDataAtPosition(&TASKSTATE->gamestateTasksCompleteSyncEvents, &gamestateTasksCompleteEvent, taskHandlerID);
@@ -29,7 +32,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
 
         if (WaitForSingleObject(systemTasksQueuedEvent, 0) == WAIT_OBJECT_0)
         {
-            if (Task_HandleTaskQueue(&TASKSTATE->systemTaskQueue))
+            if (Task_HandleTaskQueue(&TASKSTATE->systemTaskStack))
             {
                 continue;
             }
@@ -41,7 +44,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
 
         if (WaitForSingleObject(gamestateTasksQueuedEvent, 0) == WAIT_OBJECT_0)
         {
-            if (Task_HandleTaskQueue(&TASKSTATE->gamestateTaskQueue))
+            if (Task_HandleTaskQueue(&TASKSTATE->gamestateTaskStack))
             {
                 continue;
             }
@@ -54,7 +57,7 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
 
         if (WaitForSingleObject(garbageTasksQueuedEvent, 0) == WAIT_OBJECT_0)
         {
-            if (Task_HandleTaskQueue(&TASKSTATE->garbageTaskQueue))
+            if (Task_HandleTaskQueue(&TASKSTATE->garbageTaskStack))
             {
                 continue;
             }
@@ -72,26 +75,20 @@ DWORD WINAPI TaskHandler(LPVOID lpParam)
     return 0;
 }
 
-__int8 Task_HandleTaskQueue(RWL_List *checkedTaskQueue)
+__int8 Task_HandleTaskQueue(Stack *checkedTaskStack)
 {
-    List *taskQueue;
-    Task *task;
-
-    if (!ReadWriteLock_TryGetWritePermission(checkedTaskQueue, (void **)&taskQueue))
+    if (checkedTaskStack->length <= 0)
     {
-        return TRUE;
-    }
-
-    if (taskQueue->length <= 0u)
-    {
-        ReadWriteLock_ReleaseWritePermission(checkedTaskQueue, (void **)&taskQueue);
         return FALSE;
     }
 
-    task = taskQueue->head->data;
-    List_RemoveElement(taskQueue, taskQueue->head);
+    Task *task = NULL;
+    Stack_Pop(checkedTaskStack, (void **)&task);
 
-    ReadWriteLock_ReleaseWritePermission(checkedTaskQueue, (void **)&taskQueue);
+    if (task == NULL)
+    {
+        return FALSE;
+    }
 
     if (task->taskArgument != NULL)
     {
@@ -108,18 +105,17 @@ __int8 Task_HandleTaskQueue(RWL_List *checkedTaskQueue)
 }
 
 /// @brief Queues a Task to the task system.
-/// If you need to queue more than one task you should use Task_QueueTasks(List *) instead.
 /// Do *not* use this for gamestate tasks.
-/// They have an extra step and instead should use Task_QueueGamestateTask(Task *);
+/// They have an extra step and instead should use Task_PushGamestateTask(Task *);
 /// @param task The Task to queue.
-void Task_QueueTask(RWL_List *queueingTaskQueue, List *syncEvents, Task *task)
+static void Task_PushTask(Stack *taskStack, List *syncEvents, Task *task)
 {
-    List *taskQueue;
-    ReadWriteLock_GetWritePermission(queueingTaskQueue, (void **)&taskQueue);
+    if (task->task == NULL)
+    {
+        return;
+    }
 
-    List_Insert(taskQueue, task);
-
-    ReadWriteLock_ReleaseWritePermission(queueingTaskQueue, (void **)&taskQueue);
+    Stack_Push(taskStack, task);
 
     ListIterator tasksQueuedEventsIterator;
     ListIterator_Init(&tasksQueuedEventsIterator, syncEvents);
@@ -138,22 +134,22 @@ void Task_QueueTask(RWL_List *queueingTaskQueue, List *syncEvents, Task *task)
 
 /// @brief Queues a list of Task to the task system.
 /// Do *not* use this for gamestate tasks.
-/// They have an extra step and instead should use Task_QueueGamestateTask(Task *);
-/// @param list The list of Task to queue.
-void Task_QueueTasks(RWL_List *queueingTaskQueue, List *syncEvents, List *list)
+/// They have an extra step and instead should use Task_PushGamestateTask(Task *);
+/// @param taskList The list of Task to queue.
+static void Task_PushTasks(Stack *taskStack, List *syncEvents, List *taskList)
 {
-    List *taskQueue;
-    ReadWriteLock_GetWritePermission(queueingTaskQueue, (void **)&taskQueue);
-
     ListIterator listIterator;
-    ListIterator_Init(&listIterator, list);
+    ListIterator_Init(&listIterator, taskList);
     Task *task;
     while (ListIterator_Next(&listIterator, (void **)&task))
     {
-        List_Insert(taskQueue, task);
-    }
+        if (task->task == NULL)
+        {
+            continue;
+        }
 
-    ReadWriteLock_ReleaseWritePermission(queueingTaskQueue, (void **)&taskQueue);
+        Stack_Push(taskStack, task);
+    }
 
     ListIterator tasksQueuedEventsIterator;
     ListIterator_Init(&tasksQueuedEventsIterator, syncEvents);
@@ -170,20 +166,17 @@ void Task_QueueTasks(RWL_List *queueingTaskQueue, List *syncEvents, List *list)
     }
 }
 
-void Task_QueueGamestateTask(Task *task)
+void Task_PushSystemTask(Task *task)
 {
-    ListIterator gamestateTasksCompleteEventIterator;
-    ListIterator_Init(&gamestateTasksCompleteEventIterator, &TASKSTATE->gamestateTasksCompleteSyncEvents);
-    HANDLE gamestateTasksCompleteEvent;
-    while (ListIterator_Next(&gamestateTasksCompleteEventIterator, &gamestateTasksCompleteEvent))
-    {
-        ResetEvent(gamestateTasksCompleteEvent);
-    }
-
-    Task_QueueTask(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, task);
+    Task_PushTask(&TASKSTATE->systemTaskStack, &TASKSTATE->systemTasksPushedSyncEvents, task);
 }
 
-void Task_QueueGamestateTasks(List *list)
+void Task_PushSystemTasks(List *taskList)
+{
+    Task_PushTasks(&TASKSTATE->systemTaskStack, &TASKSTATE->systemTasksPushedSyncEvents, taskList);
+}
+
+void Task_PushGamestateTask(Task *task)
 {
     ListIterator gamestateTasksCompleteEventIterator;
     ListIterator_Init(&gamestateTasksCompleteEventIterator, &TASKSTATE->gamestateTasksCompleteSyncEvents);
@@ -193,5 +186,28 @@ void Task_QueueGamestateTasks(List *list)
         ResetEvent(gamestateTasksCompleteEvent);
     }
 
-    Task_QueueTasks(&TASKSTATE->gamestateTaskQueue, &TASKSTATE->gamestateTasksQueuedSyncEvents, list);
+    Task_PushTask(&TASKSTATE->gamestateTaskStack, &TASKSTATE->gamestateTasksPushedSyncEvents, task);
+}
+
+void Task_PushGamestateTasks(List *taskList)
+{
+    ListIterator gamestateTasksCompleteEventIterator;
+    ListIterator_Init(&gamestateTasksCompleteEventIterator, &TASKSTATE->gamestateTasksCompleteSyncEvents);
+    HANDLE gamestateTasksCompleteEvent;
+    while (ListIterator_Next(&gamestateTasksCompleteEventIterator, &gamestateTasksCompleteEvent))
+    {
+        ResetEvent(gamestateTasksCompleteEvent);
+    }
+
+    Task_PushTasks(&TASKSTATE->gamestateTaskStack, &TASKSTATE->gamestateTasksPushedSyncEvents, taskList);
+}
+
+void Task_PushGarbageTask(Task *task)
+{
+    Task_PushTask(&TASKSTATE->garbageTaskStack, &TASKSTATE->garbageTasksPushedSyncEvents, task);
+}
+
+void Task_PushGarbageTasks(List *taskList)
+{
+    Task_PushTasks(&TASKSTATE->garbageTaskStack, &TASKSTATE->garbageTasksPushedSyncEvents, taskList);
 }

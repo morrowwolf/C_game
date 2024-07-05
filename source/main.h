@@ -8,4 +8,6 @@
 #include "entity.h"
 #include "tasks.h"
 
+void Stack_DeallocateTaskOnPop(void *data);
+
 #endif

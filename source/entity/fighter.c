@@ -43,7 +43,7 @@ void FighterDestroy(Entity *entity)
         task->task = (void (*)(void *))FighterDestroy;
         task->taskArgument = entity;
 
-        Task_QueueTask(&TASKSTATE->garbageTaskQueue, &TASKSTATE->garbageTasksQueuedSyncEvents, task);
+        Task_PushGarbageTask(task);
 
         return;
     }

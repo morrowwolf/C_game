@@ -26,6 +26,7 @@
 #include "data_structures/list_iterator_thread.h"
 #include "data_structures/read_write_lock.h"
 #include "data_structures/read_write_lock_priority.h"
+#include "data_structures/stack.h"
 
 // https://learn.microsoft.com/en-us/cpp/c-runtime-library/type-checking-crt?view=msvc-170
 #ifdef DEBUG
@@ -134,16 +135,15 @@ typedef struct TaskState
 {
     unsigned int totalTaskThreads;
 
-    // TODO: Convert all of these to FIFO queues
-    RWL_List systemTaskQueue; // List of Task
-    List systemTasksQueuedSyncEvents;
+    Stack systemTaskStack; // List of Task
+    List systemTasksPushedSyncEvents;
 
-    RWL_List gamestateTaskQueue; // List of Task
-    List gamestateTasksQueuedSyncEvents;
+    Stack gamestateTaskStack; // List of Task
+    List gamestateTasksPushedSyncEvents;
     List gamestateTasksCompleteSyncEvents;
 
-    RWL_List garbageTaskQueue; // List of Task
-    List garbageTasksQueuedSyncEvents;
+    Stack garbageTaskStack; // List of Task
+    List garbageTasksPushedSyncEvents;
 
     List tasksQueuedSyncEvents;
 } TaskState;

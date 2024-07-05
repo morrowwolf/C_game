@@ -17,12 +17,15 @@ typedef struct
 
 DWORD WINAPI TaskHandler(LPVOID);
 
-__int8 Task_HandleTaskQueue(RWL_List *checkedTaskQueue);
+__int8 Task_HandleTaskQueue(Stack *checkedTaskStack);
 
-void Task_QueueTask(RWL_List *queueingTaskQueue, List *syncEvents, Task *task);
-void Task_QueueTasks(RWL_List *queueingTaskQueue, List *syncEvents, List *list);
+void Task_PushSystemTask(Task *task);
+void Task_PushSystemTasks(List *list);
 
-void Task_QueueGamestateTask(Task *task);
-void Task_QueueGamestateTasks(List *list);
+void Task_PushGamestateTask(Task *task);
+void Task_PushGamestateTasks(List *list);
+
+void Task_PushGarbageTask(Task *task);
+void Task_PushGarbageTasks(List *list);
 
 #endif

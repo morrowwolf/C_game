@@ -60,12 +60,12 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
         {
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
-                Task *renderTask;
-                MemoryManager_AllocateMemory((void **)&renderTask, sizeof(Task));
-                renderTask->task = (void (*)(void *))Directx_SetupRender;
-                renderTask->taskArgument = NULL;
+                Task *task;
+                MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+                task->task = (void (*)(void *))Directx_SetupRender;
+                task->taskArgument = NULL;
 
-                Task_QueueTask(&TASKSTATE->systemTaskQueue, &TASKSTATE->systemTasksQueuedSyncEvents, renderTask);
+                Task_PushSystemTask(task);
 
                 if (SCREEN->nextFrameRefreshTime.QuadPart == 0)
                 {
@@ -87,7 +87,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
                 task->task = (void (*)(void *))MemoryManager_Cleanup;
                 task->taskArgument = NULL;
 
-                Task_QueueTask(&TASKSTATE->systemTaskQueue, &TASKSTATE->systemTasksQueuedSyncEvents, task);
+                Task_PushGarbageTask(task);
 
                 if (MEMORY_MANAGER->nextMemoryCleanupTime.QuadPart == 0)
                 {
