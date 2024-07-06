@@ -57,25 +57,25 @@ void SetupBulletVelocity(Entity *settingUpEntity, Entity *firingEntity)
 void SetupBulletVertices(Entity *settingUpEntity)
 {
     Point *vertex;
-    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
     vertex->x = 1;
     vertex->y = 1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
-    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
     vertex->x = -1;
     vertex->y = 1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
-    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
     vertex->x = -1;
     vertex->y = -1;
 
     List_Insert(&settingUpEntity->baseVertices, vertex);
 
-    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&vertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
     vertex->x = 1;
     vertex->y = -1;
 

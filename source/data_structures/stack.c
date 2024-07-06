@@ -24,7 +24,7 @@ void Stack_Clear(Stack *stack)
 void Stack_Push(Stack *stack, void *data)
 {
     StackElmt *newElement;
-    MemoryManager_AllocateMemory((void **)&newElement, sizeof(StackElmt));
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(StackElmt), 0);
     newElement->data = data;
 
     EnterCriticalSection(&stack->stackCriticalSection);

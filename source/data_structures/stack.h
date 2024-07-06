@@ -4,7 +4,7 @@
 
 #include <windows.h>
 
-void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size);
+void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size, unsigned long flags);
 void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size);
 
 typedef struct StackElmt

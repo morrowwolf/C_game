@@ -10,7 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	MemoryManager_Initialize();
 
 	// Screen init
-	MemoryManager_AllocateMemory((void **)&SCREEN, sizeof(Screen));
+	MemoryManager_AllocateMemory((void **)&SCREEN, sizeof(Screen), MEMORY_MANAGER_FLAG_NO_STORE);
 	SCREEN->screenWidth = DEFAULT_SCREEN_SIZE_X;
 	SCREEN->screenHeight = DEFAULT_SCREEN_SIZE_Y;
 	SCREEN->screenRadius = sqrt(pow(SCREEN->screenWidth, 2) + pow(SCREEN->screenHeight, 2));
@@ -19,7 +19,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SCREEN->preRenderSetupMutex = CreateMutex(NULL, FALSE, NULL);
 
 	// Taskstate init
-	MemoryManager_AllocateMemory((void **)&TASKSTATE, sizeof(TaskState));
+	MemoryManager_AllocateMemory((void **)&TASKSTATE, sizeof(TaskState), MEMORY_MANAGER_FLAG_NO_STORE);
 
 	Stack_Init(&TASKSTATE->systemTaskStack, NULL);
 	Stack_Init(&TASKSTATE->gamestateTaskStack, NULL);
@@ -48,7 +48,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		List_Insert(&TASKSTATE->garbageTasksPushedSyncEvents, CreateEvent(NULL, TRUE, FALSE, NULL));
 
 		TaskHandlerArgs *taskHandlerArgs;
-		MemoryManager_AllocateMemory((void **)&taskHandlerArgs, sizeof(TaskHandlerArgs));
+		MemoryManager_AllocateMemory((void **)&taskHandlerArgs, sizeof(TaskHandlerArgs), MEMORY_MANAGER_FLAG_NO_STORE);
 		taskHandlerArgs->taskHandlerID = i;
 
 		threadHandle = CreateThread(NULL, 0, TaskHandler, taskHandlerArgs, 0, NULL);
@@ -58,16 +58,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	}
 
 	// Gamestate init
-	MemoryManager_AllocateMemory((void **)&GAMESTATE, sizeof(Gamestate));
+	MemoryManager_AllocateMemory((void **)&GAMESTATE, sizeof(Gamestate), MEMORY_MANAGER_FLAG_NO_STORE);
 
 	List *entities;
-	MemoryManager_AllocateMemory((void **)&entities, sizeof(List));
+	MemoryManager_AllocateMemory((void **)&entities, sizeof(List), MEMORY_MANAGER_FLAG_NONE);
 	List *deadEntities;
-	MemoryManager_AllocateMemory((void **)&deadEntities, sizeof(List));
+	MemoryManager_AllocateMemory((void **)&deadEntities, sizeof(List), MEMORY_MANAGER_FLAG_NONE);
 	List *asteroids;
-	MemoryManager_AllocateMemory((void **)&asteroids, sizeof(List));
+	MemoryManager_AllocateMemory((void **)&asteroids, sizeof(List), MEMORY_MANAGER_FLAG_NONE);
 	List *fighters;
-	MemoryManager_AllocateMemory((void **)&fighters, sizeof(List));
+	MemoryManager_AllocateMemory((void **)&fighters, sizeof(List), MEMORY_MANAGER_FLAG_NONE);
 	List_Init(entities, NULL);
 	List_Init(deadEntities, NULL);
 	List_Init(asteroids, NULL);

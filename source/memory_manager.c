@@ -68,7 +68,7 @@ void MemoryManager_Destroy()
     free(MEMORY_MANAGER);
 }
 
-void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
+void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size, unsigned long flags)
 {
     EnterCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
 
@@ -103,9 +103,10 @@ void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size)
     }
 
     MemorySizeInformation *newMemorySizeInfo;
-    MemoryManager_AllocateMemory((void **)&newMemorySizeInfo, sizeof(MemorySizeInformation));
+    MemoryManager_AllocateMemory((void **)&newMemorySizeInfo, sizeof(MemorySizeInformation), MEMORY_MANAGER_FLAG_NONE);
     MemoryPool_Initialize(&newMemorySizeInfo->memoryPool, size, 1);
     newMemorySizeInfo->amountOfUsedMemoryChunks = 1;
+    newMemorySizeInfo->flags = flags;
     (*passbackPointer) = calloc(1, size);
 
     List_Insert(&MEMORY_MANAGER->memorySizeInfos, newMemorySizeInfo);
@@ -129,16 +130,28 @@ void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size)
         }
 
         memorySizeInfo->deallocatedCount += 1;
+        memorySizeInfo->amountOfUsedMemoryChunks -= 1;
+
+        if (memorySizeInfo->flags & MEMORY_MANAGER_FLAG_NO_STORE)
+        {
+            free((*memoryPointer));
+
+            if (memorySizeInfo->amountOfUsedMemoryChunks == 0)
+            {
+                List_RemoveElement(&MEMORY_MANAGER->memorySizeInfos, memorySizeInfosIterator.currentListElement);
+            }
+
+            LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
+            return;
+        }
 
         if (MemoryPool_StoreMemory(&memorySizeInfo->memoryPool, (*memoryPointer)))
         {
-            memorySizeInfo->amountOfUsedMemoryChunks -= 1;
             LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
             return;
         }
 
         free((*memoryPointer));
-        memorySizeInfo->amountOfUsedMemoryChunks -= 1;
         memorySizeInfo->failedToStoreCount += 1;
         LeaveCriticalSection(&MEMORY_MANAGER->memorySizeInfosCriticalSection);
         return;
@@ -154,7 +167,7 @@ void MemoryManager_Cleanup()
     if (GAMESTATE->tickProcessing)
     {
         Task *task;
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
         task->task = (void (*)(void *))MemoryManager_Cleanup;
         task->taskArgument = NULL;
 

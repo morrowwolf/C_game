@@ -61,7 +61,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
             if (WaitForSingleObject(hUpdateWindowTimer, 0) == WAIT_OBJECT_0)
             {
                 Task *task;
-                MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+                MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
                 task->task = (void (*)(void *))Directx_SetupRender;
                 task->taskArgument = NULL;
 
@@ -83,7 +83,7 @@ int WindowHandler(HINSTANCE hInstance, int iCmdShow)
             if (WaitForSingleObject(MEMORY_MANAGER->memoryCleanupTimer, 0) == WAIT_OBJECT_0)
             {
                 Task *task;
-                MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+                MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
                 task->task = (void (*)(void *))MemoryManager_Cleanup;
                 task->taskArgument = NULL;
 

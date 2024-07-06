@@ -13,7 +13,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
     // the entities global list while this is being iterated in a tick
     // We do this via the tickProcessing variable in the GAMESTATE global variable
     ListIteratorThread *entitiesIteratorThread;
-    MemoryManager_AllocateMemory((void **)&entitiesIteratorThread, sizeof(ListIteratorThread));
+    MemoryManager_AllocateMemory((void **)&entitiesIteratorThread, sizeof(ListIteratorThread), MEMORY_MANAGER_FLAG_NONE);
     ListIteratorThread_Init(entitiesIteratorThread, GAMESTATE->entities.protectedData);
 
     void *arrayOfTasksCompleteSyncEvents;
@@ -48,13 +48,13 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
         // TODO: Any spawn tasks should eventually be put in a post-update
         //  task queue so that they don't interfere with the current tick
         Task *task;
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
         task->task = (void (*)(void *))Gamestate_FighterSpawn;
         task->taskArgument = NULL;
 
         List_Insert(&tasksToQueue, task);
 
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
         task->task = (void (*)(void *))Gamestate_AsteroidSpawn;
         task->taskArgument = NULL;
 
@@ -62,7 +62,7 @@ DWORD WINAPI GamestateHandler(LPVOID lpParam)
 
         for (unsigned __int32 i = 0; i < TASKSTATE->totalTaskThreads; i++)
         {
-            MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+            MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
             task->task = (void (*)(void *))Gamestate_EntitiesOnTick;
             task->taskArgument = entitiesIteratorThread;
 
@@ -142,7 +142,7 @@ void Gamestate_EntitiesOnTick(ListIteratorThread *entitiesListIteratorThread)
     }
 
     Task *task;
-    MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+    MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
     task->task = (void (*)(void *))Gamestate_EntitiesOnTick;
     task->taskArgument = entitiesListIteratorThread;
 

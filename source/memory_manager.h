@@ -6,6 +6,9 @@
 #include "data_structures/memory_pool.h"
 #include "tasks.h"
 
+#define MEMORY_MANAGER_FLAG_NONE (1 << 0)
+#define MEMORY_MANAGER_FLAG_NO_STORE (1 << 1)
+
 typedef struct MemoryManager
 {
     CRITICAL_SECTION memorySizeInfosCriticalSection;
@@ -24,15 +27,18 @@ typedef struct MemorySizeInfo
 {
     MemoryPool memoryPool; // Pool of void* pointers to unused memory
     unsigned int amountOfUsedMemoryChunks;
+
     unsigned int allocatedCount;
     unsigned int deallocatedCount;
     unsigned int failedToStoreCount;
+
+    unsigned long flags;
 } MemorySizeInformation;
 
 void MemoryManager_Initialize();
 void MemoryManager_Destroy();
 
-void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size);
+void MemoryManager_AllocateMemory(void **passbackPointer, unsigned int size, unsigned long flags);
 void MemoryManager_DeallocateMemory(void **memoryPointer, unsigned int size);
 
 void MemoryManager_Cleanup();

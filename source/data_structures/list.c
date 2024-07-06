@@ -51,7 +51,7 @@ int List_InsertNext(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt), 0);
 
     newElement->data = (void *)data;
 
@@ -127,7 +127,7 @@ int List_InsertPrevious(List *list, ListElmt *element, const void *data)
         return FALSE;
     }
 
-    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt));
+    MemoryManager_AllocateMemory((void **)&newElement, sizeof(ListElmt), 0);
 
     newElement->data = (void *)data;
 
@@ -402,7 +402,7 @@ short List_GetElementWithMatchingData(List *list, ListElmt **element, void *data
 void List_GetAsArray(List *list, void **returnedArray)
 {
     void **array;
-    MemoryManager_AllocateMemory((void **)&array, list->length * sizeof(void *));
+    MemoryManager_AllocateMemory((void **)&array, list->length * sizeof(void *), (1 << 1));
     unsigned int counter = 0;
     ListElmt *referenceElement = list->head;
     while (referenceElement != NULL)

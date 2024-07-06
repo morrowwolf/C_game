@@ -34,7 +34,7 @@ void AsteroidDestroy(Entity *entity)
     if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->asteroids, (void **)&asteroids))
     {
         Task *task;
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
         task->task = (void (*)(void *))AsteroidDestroy;
         task->taskArgument = entity;
 
@@ -121,7 +121,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaY);
 
     Point *baseVertex;
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
@@ -131,7 +131,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);
@@ -141,7 +141,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = 0 + AXIS_VARIATION_CALCULATION(deltaY);
@@ -151,7 +151,7 @@ void SetupVerticesAsteroid(Entity *settingUpEntity)
     RANDOMIZE(deltaX);
     RANDOMIZE(deltaY);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = 0 + AXIS_VARIATION_CALCULATION(deltaX);
     baseVertex->y = -DEFAULT_AXIS_LENGTH + AXIS_VARIATION_CALCULATION(deltaY);

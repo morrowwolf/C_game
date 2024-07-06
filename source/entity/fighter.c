@@ -39,7 +39,7 @@ void FighterDestroy(Entity *entity)
     if (!ReadWriteLock_TryGetWritePermission(&GAMESTATE->fighters, (void **)&fighters))
     {
         Task *task;
-        MemoryManager_AllocateMemory((void **)&task, sizeof(Task));
+        MemoryManager_AllocateMemory((void **)&task, sizeof(Task), MEMORY_MANAGER_FLAG_NONE);
         task->task = (void (*)(void *))FighterDestroy;
         task->taskArgument = entity;
 
@@ -75,28 +75,28 @@ void SetupVerticesFighter(Entity *settingUpEntity)
     RANDOMIZE(deltaY);
 
     Point *baseVertex;
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = 5;
     baseVertex->y = 0;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = -5;
     baseVertex->y = -5;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = -2;
     baseVertex->y = 0;
 
     List_Insert(&settingUpEntity->baseVertices, baseVertex);
 
-    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point));
+    MemoryManager_AllocateMemory((void **)&baseVertex, sizeof(Point), MEMORY_MANAGER_FLAG_NONE);
 
     baseVertex->x = -5;
     baseVertex->y = 5;
